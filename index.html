@@ -83,6 +83,7 @@
 
   .go{background:var(--strong); color:#fff; border:none; padding:13px; width:100%; border-radius:10px;
     font-weight:800; font-size:14px; margin-bottom:16px; cursor:pointer;}
+  .go.sent{background:var(--card-alt); color:var(--strong); border:1.5px solid var(--strong); cursor:default;}
 
   .metric-grid{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:14px;}
   .metric{background:var(--card); border-radius:10px; padding:12px; border:1px solid var(--line);}
@@ -182,6 +183,39 @@
   .buy-btn{width:100%; border:none; background:var(--accent); color:#fff; font-weight:800; font-size:12.5px;
     padding:10px; border-radius:8px; cursor:pointer;}
   .buy-btn.sent{background:var(--card-alt); color:var(--strong); border:1.5px solid var(--strong); cursor:default;}
+
+  /* ---------- Community sub-tabs + chat ---------- */
+  .tabswitch{display:flex; gap:8px; background:var(--chip-off); border-radius:10px; padding:4px; margin:0 16px 14px;}
+  .tabswitch button{flex:1; border:none; background:transparent; padding:9px; border-radius:8px;
+    font-size:12.5px; font-weight:700; color:var(--muted); cursor:pointer;}
+  .tabswitch button.on{background:var(--strong); color:#fff;}
+  .community-view{display:none;} .community-view.on{display:block;}
+
+  .chat-row{display:flex; align-items:center; gap:10px; padding:11px 4px; border-bottom:1px solid var(--line); cursor:pointer;}
+  .chat-row .av{width:40px; height:40px; border-radius:50%; background:var(--strong); flex-shrink:0;
+    display:flex; align-items:center; justify-content:center; color:#fff; font-size:15px; font-weight:800;}
+  .chat-row .ci{flex:1; min-width:0;}
+  .chat-row .cn{font-size:13px; font-weight:700;}
+  .chat-row .cl{font-size:11.5px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .chat-row .ct{font-size:10px; color:var(--muted); flex-shrink:0;}
+  .chat-context{background:var(--card-alt); border-radius:10px; padding:10px 12px; font-size:11.5px; color:var(--strong);
+    margin:12px 16px 4px; text-align:center;}
+
+  .bubble-row{display:flex; margin-bottom:10px;}
+  .bubble-row.me{justify-content:flex-end;}
+  .bubble{max-width:75%; padding:10px 13px; border-radius:14px; font-size:13px; line-height:1.5;}
+  .bubble-row.me .bubble{background:var(--strong); color:#fff; border-bottom-right-radius:4px;}
+  .bubble-row.them .bubble{background:var(--card); border:1px solid var(--line); border-bottom-left-radius:4px;}
+  .bubble-time{font-size:9.5px; color:var(--muted); margin-top:3px;}
+
+  .chat-input-bar{
+    position:fixed; left:0; right:0; bottom:64px; max-width:480px; margin:0 auto;
+    background:var(--card); border-top:1px solid var(--line); padding:10px 12px;
+    display:flex; gap:8px; z-index:15;
+  }
+  .chat-input-bar input{flex:1; border:1px solid var(--line); border-radius:20px; padding:10px 14px; font-size:13px;}
+  .chat-input-bar button{background:var(--accent); color:#fff; border:none; border-radius:20px; padding:0 18px; font-weight:700; font-size:13px;}
+  @media (min-width:481px){ .chat-input-bar{position:absolute;} }
 </style>
 </head>
 <body>
@@ -286,6 +320,7 @@
         </div>
         <div class="sec-h"><h3>ผู้รับซื้อที่จับคู่ได้</h3></div>
         <div id="matchList"></div>
+        <button class="go" id="postListingBtn" style="margin-top:4px;" onclick="postListing()">📢 ประกาศขายให้ผู้ซื้อเห็น</button>
       </div>
     </div>
   </div>
@@ -318,18 +353,40 @@
 
   <!-- COMMUNITY -->
   <div id="tab-community" class="pane">
-    <div class="topbar"><div class="name">ชุมชนเกษตรกร</div></div>
+    <div class="topbar"><div class="name">ชุมชน</div></div>
+    <div class="tabswitch">
+      <button class="on" id="btnShowFeed" onclick="switchCommunity('feed')">ฟีด</button>
+      <button id="btnShowChats" onclick="switchCommunity('chats')">แชท</button>
+    </div>
     <div class="content">
-      <div class="post pinned">
-        <div class="ph"><div class="av"></div><div><div class="pn">ผู้เชี่ยวชาญ กรมวิชาการเกษตร</div><div class="pl">ปักหมุด</div></div></div>
-        <div class="pt">ถามได้ทุกวันพุธ 10:00 น. สัปดาห์นี้หัวข้อ "หมักปุ๋ยจากเปลือกสับปะรดให้ได้คุณภาพสูง"</div>
-        <div class="pf"><span>💬 42</span><span>👍 128</span></div>
+      <div class="community-view on" id="communityFeed">
+        <div class="post pinned">
+          <div class="ph"><div class="av"></div><div><div class="pn">ผู้เชี่ยวชาญ กรมวิชาการเกษตร</div><div class="pl">ปักหมุด</div></div></div>
+          <div class="pt">ถามได้ทุกวันพุธ 10:00 น. สัปดาห์นี้หัวข้อ "หมักปุ๋ยจากเปลือกสับปะรดให้ได้คุณภาพสูง"</div>
+          <div class="pf"><span>💬 42</span><span>👍 128</span></div>
+        </div>
+        <div class="post">
+          <div class="ph"><div class="av"></div><div><div class="pn">สมหญิง อ.ปากช่อง</div><div class="pl">นครราชสีมา</div></div></div>
+          <div class="pt">ขายซังข้าวโพดรอบนี้ได้ราคาดีกว่ารอบก่อนเกือบเท่าตัว เพราะรวมกลุ่มกับเพื่อนบ้านผ่านแอปค่ะ 🌽</div>
+          <div class="pf"><span>💬 8</span><span>👍 56</span></div>
+        </div>
       </div>
-      <div class="post">
-        <div class="ph"><div class="av"></div><div><div class="pn">สมหญิง อ.ปากช่อง</div><div class="pl">นครราชสีมา</div></div></div>
-        <div class="pt">ขายซังข้าวโพดรอบนี้ได้ราคาดีกว่ารอบก่อนเกือบเท่าตัว เพราะรวมกลุ่มกับเพื่อนบ้านผ่านแอปค่ะ 🌽</div>
-        <div class="pf"><span>💬 8</span><span>👍 56</span></div>
+      <div class="community-view" id="communityChats">
+        <div id="chatInboxList"></div>
       </div>
+    </div>
+  </div>
+
+  <!-- CHAT THREAD -->
+  <div id="tab-chatThread" class="pane">
+    <div class="topbar">
+      <div class="greet" onclick="goTab('community')" style="cursor:pointer;">← แชท</div>
+      <div class="name" id="chatThreadName">–</div>
+    </div>
+    <div class="content" id="chatMessages" style="padding-bottom:150px;"></div>
+    <div class="chat-input-bar">
+      <input type="text" id="chatInput" placeholder="พิมพ์ข้อความ...">
+      <button onclick="sendChatMessage()">ส่ง</button>
     </div>
   </div>
 
@@ -576,16 +633,52 @@ function renderHomeBuyers(){
 }
 renderHomeBuyers();
 
-// ---------- Buy waste listings (mock feed for buyer role) ----------
-const WASTE_LISTINGS = [
-  {seller:"สมชาย ใจดี", province:"เชียงใหม่", wasteKey:"pineapple_peel", qty:2.0, posted:"2 ชม.ที่แล้ว"},
-  {seller:"สมหญิง แสงดี", province:"นครราชสีมา", wasteKey:"corn_cob", qty:8.5, posted:"5 ชม.ที่แล้ว"},
-  {seller:"ประวิทย์ คงดี", province:"ประจวบคีรีขันธ์", wasteKey:"coffee_grounds", qty:1.2, posted:"เมื่อวาน"},
-  {seller:"วิไล ทองดี", province:"ขอนแก่น", wasteKey:"rice_husk", qty:12.0, posted:"เมื่อวาน"},
-  {seller:"อนันต์ พูนดี", province:"สุราษฎร์ธานี", wasteKey:"cassava_pulp", qty:5.0, posted:"2 วันที่แล้ว"},
-  {seller:"มาลี ศรีดี", province:"ราชบุรี", wasteKey:"pineapple_peel", qty:6.0, posted:"2 วันที่แล้ว"}
+// ---------- Helpers ----------
+function nowLabel(){ return new Date().toLocaleTimeString('th-TH', {hour:'2-digit', minute:'2-digit'}); }
+function escapeHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// ---------- Listings (real ones posted by sellers, stored locally) ----------
+const LISTINGS_KEY = 'ecoagro_listings';
+function getListings(){ return JSON.parse(localStorage.getItem(LISTINGS_KEY) || '[]'); }
+function saveListings(arr){ localStorage.setItem(LISTINGS_KEY, JSON.stringify(arr)); }
+
+function postListing(){
+  const user = getCurrentUser();
+  if(!user) return;
+  const kb = WASTE_KB[selectedWaste];
+  const qty = parseFloat(document.getElementById('qtyRange').value);
+  const origin = originSel.value;
+  const listings = getListings();
+  listings.unshift({
+    id: 'L' + Date.now(),
+    sellerPhone: user.phone,
+    sellerName: user.name,
+    wasteKey: selectedWaste,
+    qty: qty,
+    provinceLabel: PROVINCES[origin].label,
+    price: kb.uses[0].value,
+    postedAt: 'เพิ่งประกาศ'
+  });
+  saveListings(listings);
+  renderBuyListings();
+  const btn = document.getElementById('postListingBtn');
+  btn.textContent = '✓ ประกาศขายแล้ว — ดูได้ในแท็บ "ซื้อของเหลือ"';
+  btn.classList.add('sent');
+  btn.onclick = null;
+}
+
+// mock seed listings so the buy feed isn't empty on first run
+const WASTE_LISTINGS_MOCK = [
+  {id:'M1', sellerPhone:'mock-1', sellerName:'สมชาย ใจดี', wasteKey:'pineapple_peel', qty:2.0, provinceLabel:'เชียงใหม่', price:WASTE_KB.pineapple_peel.uses[0].value, postedAt:'2 ชม.ที่แล้ว'},
+  {id:'M2', sellerPhone:'mock-2', sellerName:'สมหญิง แสงดี', wasteKey:'corn_cob', qty:8.5, provinceLabel:'นครราชสีมา', price:WASTE_KB.corn_cob.uses[0].value, postedAt:'5 ชม.ที่แล้ว'},
+  {id:'M3', sellerPhone:'mock-3', sellerName:'ประวิทย์ คงดี', wasteKey:'coffee_grounds', qty:1.2, provinceLabel:'ประจวบคีรีขันธ์', price:WASTE_KB.coffee_grounds.uses[0].value, postedAt:'เมื่อวาน'},
+  {id:'M4', sellerPhone:'mock-4', sellerName:'วิไล ทองดี', wasteKey:'rice_husk', qty:12.0, provinceLabel:'ขอนแก่น', price:WASTE_KB.rice_husk.uses[0].value, postedAt:'เมื่อวาน'},
+  {id:'M5', sellerPhone:'mock-5', sellerName:'อนันต์ พูนดี', wasteKey:'cassava_pulp', qty:5.0, provinceLabel:'สุราษฎร์ธานี', price:WASTE_KB.cassava_pulp.uses[0].value, postedAt:'2 วันที่แล้ว'},
+  {id:'M6', sellerPhone:'mock-6', sellerName:'มาลี ศรีดี', wasteKey:'pineapple_peel', qty:6.0, provinceLabel:'ราชบุรี', price:WASTE_KB.pineapple_peel.uses[0].value, postedAt:'2 วันที่แล้ว'}
 ];
+
 let buyFilter = "all";
+let currentBuyItems = [];
 
 function renderBuyChips(){
   const el = document.getElementById('buyFilterChips');
@@ -612,31 +705,144 @@ function setBuyFilter(key, el){
 function renderBuyListings(){
   const el = document.getElementById('buyListings');
   el.innerHTML = "";
-  const items = WASTE_LISTINGS.filter(l => buyFilter==="all" || l.wasteKey===buyFilter);
-  if(items.length===0){
+  const combined = [...getListings(), ...WASTE_LISTINGS_MOCK];
+  currentBuyItems = combined.filter(l => buyFilter==="all" || l.wasteKey===buyFilter);
+  if(currentBuyItems.length===0){
     el.innerHTML = `<div class="feat">ยังไม่มีประกาศของเหลือประเภทนี้ในตอนนี้</div>`;
     return;
   }
-  items.forEach((l,i)=>{
+  currentBuyItems.forEach((l,i)=>{
     const kb = WASTE_KB[l.wasteKey];
-    const price = kb.uses[0].value;
     el.innerHTML += `
       <div class="listing-card">
         <div class="l-top">
-          <div><div class="l-type">${kb.label}</div><div class="l-qty">${l.qty.toFixed(1)} ตัน · ${l.province}</div></div>
-          <div><div class="l-price">${fmtBaht(price)}</div><div class="l-unit">ต่อตัน</div></div>
+          <div><div class="l-type">${kb.label}</div><div class="l-qty">${l.qty.toFixed(1)} ตัน · ${l.provinceLabel}</div></div>
+          <div><div class="l-price">${fmtBaht(l.price)}</div><div class="l-unit">ต่อตัน</div></div>
         </div>
-        <div class="l-meta">ผู้ขาย: ${l.seller} · ลงประกาศ ${l.posted}</div>
-        <button class="buy-btn" id="buyBtn${i}" onclick="sendBuyRequest(${i})">สนใจซื้อ</button>
+        <div class="l-meta">ผู้ขาย: ${l.sellerName} · ${l.postedAt}</div>
+        <button class="buy-btn" id="buyBtn${i}" onclick="interestInListing(${i})">สนใจซื้อ</button>
       </div>`;
   });
 }
-function sendBuyRequest(i){
+
+// ---------- Chats (mock, localStorage only — see disclaimer in chat notes) ----------
+const CHATS_KEY = 'ecoagro_chats';
+function getChats(){ return JSON.parse(localStorage.getItem(CHATS_KEY) || '{}'); }
+function saveChats(c){ localStorage.setItem(CHATS_KEY, JSON.stringify(c)); }
+
+function interestInListing(i){
+  const user = getCurrentUser();
+  if(!user) return;
+  const listing = currentBuyItems[i];
+  if(!listing) return;
+  if(listing.sellerPhone === user.phone){
+    alert('นี่คือประกาศของคุณเอง');
+    return;
+  }
+  const kb = WASTE_KB[listing.wasteKey];
+  const convId = listing.id + '::' + user.phone;
+  const chats = getChats();
+  if(!chats[convId]){
+    chats[convId] = {
+      listingId: listing.id,
+      sellerPhone: listing.sellerPhone,
+      sellerName: listing.sellerName,
+      buyerPhone: user.phone,
+      buyerName: user.name,
+      wasteLabel: kb.label,
+      qty: listing.qty,
+      messages: [
+        { from: user.phone, text: `สนใจซื้อ${kb.label} ${listing.qty.toFixed(1)} ตัน ครับ/ค่ะ`, time: nowLabel() }
+      ],
+      updatedAt: Date.now()
+    };
+    saveChats(chats);
+  }
   const btn = document.getElementById('buyBtn'+i);
-  btn.textContent = "✓ ส่งคำขอซื้อแล้ว";
-  btn.classList.add('sent');
-  btn.onclick = null;
+  if(btn){ btn.textContent = '✓ ส่งคำขอซื้อแล้ว'; btn.classList.add('sent'); btn.onclick = null; }
+  openChatThread(convId);
 }
+
+let activeConvId = null;
+
+function openChatThread(convId){
+  activeConvId = convId;
+  renderChatThread();
+  goTab('chatThread');
+}
+
+function renderChatThread(){
+  const chats = getChats();
+  const conv = chats[activeConvId];
+  const user = getCurrentUser();
+  if(!conv || !user) return;
+  const otherName = (user.phone === conv.sellerPhone) ? conv.buyerName : conv.sellerName;
+  document.getElementById('chatThreadName').textContent = otherName;
+  const msgEl = document.getElementById('chatMessages');
+  msgEl.innerHTML = `<div class="chat-context">คุยเรื่อง: ${conv.wasteLabel} ${conv.qty.toFixed(1)} ตัน</div>`;
+  conv.messages.forEach(m=>{
+    const mine = m.from === user.phone;
+    msgEl.innerHTML += `
+      <div class="bubble-row ${mine?'me':'them'}">
+        <div>
+          <div class="bubble">${escapeHtml(m.text)}</div>
+          <div class="bubble-time" style="text-align:${mine?'right':'left'};">${m.time}</div>
+        </div>
+      </div>`;
+  });
+}
+
+function sendChatMessage(){
+  const input = document.getElementById('chatInput');
+  const text = input.value.trim();
+  if(!text || !activeConvId) return;
+  const user = getCurrentUser();
+  const chats = getChats();
+  const conv = chats[activeConvId];
+  if(!conv || !user) return;
+  conv.messages.push({ from: user.phone, text, time: nowLabel() });
+  conv.updatedAt = Date.now();
+  saveChats(chats);
+  input.value = '';
+  renderChatThread();
+}
+
+function renderChatInbox(){
+  const user = getCurrentUser();
+  const el = document.getElementById('chatInboxList');
+  if(!user){ el.innerHTML = ''; return; }
+  const chats = getChats();
+  const mine = Object.entries(chats).filter(([id,c]) => c.sellerPhone===user.phone || c.buyerPhone===user.phone);
+  mine.sort((a,b)=> b[1].updatedAt - a[1].updatedAt);
+  if(mine.length===0){
+    el.innerHTML = `<div class="feat">ยังไม่มีแชท — ลองกด "สนใจซื้อ" ในแท็บซื้อของเหลือ หรือรอมีคนสนใจของที่คุณประกาศขายไว้</div>`;
+    return;
+  }
+  el.innerHTML = '';
+  mine.forEach(([id,c])=>{
+    const otherName = user.phone===c.sellerPhone ? c.buyerName : c.sellerName;
+    const initial = (otherName||'?').trim().charAt(0);
+    const lastMsg = c.messages[c.messages.length-1];
+    el.innerHTML += `
+      <div class="chat-row" onclick="openChatThread('${id}')">
+        <div class="av">${initial}</div>
+        <div class="ci">
+          <div class="cn">${escapeHtml(otherName)}</div>
+          <div class="cl">${escapeHtml(lastMsg.text)}</div>
+        </div>
+        <div class="ct">${lastMsg.time}</div>
+      </div>`;
+  });
+}
+
+function switchCommunity(which){
+  document.getElementById('btnShowFeed').classList.toggle('on', which==='feed');
+  document.getElementById('btnShowChats').classList.toggle('on', which==='chats');
+  document.getElementById('communityFeed').classList.toggle('on', which==='feed');
+  document.getElementById('communityChats').classList.toggle('on', which==='chats');
+  if(which==='chats') renderChatInbox();
+}
+
 renderBuyChips();
 renderBuyListings();
 
