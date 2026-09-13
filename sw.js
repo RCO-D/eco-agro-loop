@@ -1,6 +1,6 @@
 const CACHE_NAME = "eco-agro-loop-v1";
 const ASSETS_TO_CACHE = [
-  "./eco-agro-loop-final.html",
+  "./index.html",
   "./manifest.json",
   "./icon-192.png",
   "./icon-512.png"
@@ -30,7 +30,7 @@ self.addEventListener("fetch", (event) => {
     caches.match(event.request).then((cached) => {
       return (
         cached ||
-        fetch(event.request).catch(() => caches.match("./eco-agro-loop-final.html"))
+        fetch(event.request).catch(() => caches.match("./index.html"))
       );
     })
   );

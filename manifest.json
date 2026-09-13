@@ -2,7 +2,7 @@
   "name": "Eco-Agro Loop",
   "short_name": "AgroLoop",
   "description": "แพลตฟอร์มจับคู่ของเหลือทิ้งจากภาคเกษตรสู่ผู้รับซื้อ พร้อมประเมินมูลค่าและคาร์บอนที่ลดได้",
-  "start_url": "./eco-agro-loop-final.html",
+  "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
