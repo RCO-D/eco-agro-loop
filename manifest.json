@@ -1,0 +1,16 @@
+{
+  "name": "Eco-Agro Loop",
+  "short_name": "AgroLoop",
+  "description": "แพลตฟอร์มจับคู่ของเหลือทิ้งจากภาคเกษตรสู่ผู้รับซื้อ พร้อมประเมินมูลค่าและคาร์บอนที่ลดได้",
+  "start_url": "./eco-agro-loop-final.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#FFFFFF",
+  "theme_color": "#3F7A1F",
+  "lang": "th",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
