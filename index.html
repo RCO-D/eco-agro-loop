@@ -217,9 +217,9 @@
     <div class="content">
       <div class="hero">
         <div class="pts-label">แต้มคาร์บอนสะสม</div>
-        <div class="row"><div class="pts">2,480</div><div class="badge">🌱 ต้นกล้า</div></div>
-        <div class="track"><div class="fill"></div></div>
-        <div class="next">อีก 720 แต้ม ไต่สู่ระดับ "ต้นไทร"</div>
+        <div class="row"><div class="pts" id="heroPoints">0</div><div class="badge" id="heroBadge">🌱 ต้นกล้า</div></div>
+        <div class="track"><div class="fill" id="heroFill" style="width:0%;"></div></div>
+        <div class="next" id="heroNext">เริ่มแจ้งของเหลือเพื่อสะสมแต้มแรกของคุณ</div>
       </div>
       <button class="cta" onclick="goTab('list')">
         <div class="ic">📝</div>
@@ -436,17 +436,62 @@ function switchAuth(which){
   document.getElementById('loginForm').classList.toggle('on', which==='login');
 }
 
+const LEVELS = [
+  {name:"ต้นกล้า", icon:"🌱", min:0},
+  {name:"ต้นไทร", icon:"🌳", min:3200},
+  {name:"ผืนป่า", icon:"🌲", min:8000},
+  {name:"ป่าใหญ่", icon:"🌴", min:15000}
+];
+
+function renderHero(user){
+  const points = user.points || 0;
+  document.getElementById('heroPoints').textContent = points.toLocaleString('th-TH');
+
+  let levelIdx = 0;
+  for(let i=0;i<LEVELS.length;i++){ if(points >= LEVELS[i].min) levelIdx = i; }
+  const level = LEVELS[levelIdx];
+  const nextLevel = LEVELS[levelIdx+1];
+
+  document.getElementById('heroBadge').textContent = `${level.icon} ${level.name}`;
+
+  if(nextLevel){
+    const span = nextLevel.min - level.min;
+    const progressed = points - level.min;
+    const pct = Math.min(100, Math.round((progressed/span)*100));
+    document.getElementById('heroFill').style.width = pct + '%';
+    document.getElementById('heroNext').textContent =
+      points === 0
+        ? 'เริ่มแจ้งของเหลือเพื่อสะสมแต้มแรกของคุณ'
+        : `อีก ${(nextLevel.min - points).toLocaleString('th-TH')} แต้ม ไต่สู่ระดับ "${nextLevel.name}"`;
+  } else {
+    document.getElementById('heroFill').style.width = '100%';
+    document.getElementById('heroNext').textContent = 'คุณอยู่ระดับสูงสุดแล้ว 🎉';
+  }
+}
+
 function applyUser(user){
   const roles = user.roles || (user.role ? [user.role] : ['seller']);
   document.getElementById('greetName').textContent = user.name;
   document.getElementById('profileName').textContent = user.name;
   document.getElementById('profileRole').textContent = roleLabel(roles) + ' · ' + user.provinceLabel;
   document.getElementById('authScreen').classList.add('hidden');
+  renderHero(user);
 }
 
 function logout(){
   localStorage.removeItem(CURRENT_KEY);
   location.reload();
+}
+
+function awardPoints(qty){
+  const phone = localStorage.getItem(CURRENT_KEY);
+  if(!phone) return; // not logged in (shouldn't happen, auth screen gates this)
+  const accounts = getAccounts();
+  const user = accounts[phone];
+  if(!user) return;
+  user.points = (user.points || 0) + Math.round(qty * 1000);
+  saveAccounts(accounts);
+  renderHero(user);
 }
 
 document.getElementById('signupForm').addEventListener('submit', function(e){
@@ -467,7 +512,7 @@ document.getElementById('signupForm').addEventListener('submit', function(e){
     errEl.style.display = 'block';
     return;
   }
-  accounts[phone] = { name, phone, roles: Array.from(selectedRoles), province, provinceLabel: PROVINCES[province].label };
+  accounts[phone] = { name, phone, roles: Array.from(selectedRoles), province, provinceLabel: PROVINCES[province].label, points: 0 };
   saveAccounts(accounts);
   localStorage.setItem(CURRENT_KEY, phone);
   applyUser(accounts[phone]);
@@ -542,6 +587,8 @@ function runAnalysis(){
       <div class="bn">${i+1}. ${b.name}</div><div class="bt">${b.type}</div><div class="bd">📍 ${fmtKm(b.dist)}</div>
     </div>`;
   });
+
+  awardPoints(qty);
 
   document.getElementById('resultBlock').style.display = 'block';
 }
