@@ -15,17 +15,20 @@
     --teal:#2C655A;
   }
   *{box-sizing:border-box;}
-  body{margin:0; background:#0d1712; font-family:-apple-system,"Segoe UI","Sarabun",Roboto,sans-serif;
-    display:flex; justify-content:center; padding:24px 12px;}
-  .phone{width:390px; height:800px; background:var(--bg); border-radius:34px; overflow:hidden;
-    position:relative; box-shadow:0 30px 70px rgba(0,0,0,0.5); border:8px solid #16231C;
+  html, body{margin:0; height:100%; overflow:hidden;}
+  body{background:#0d1712; font-family:-apple-system,"Segoe UI","Sarabun",Roboto,sans-serif;}
+  .phone{width:100%; max-width:480px; height:100dvh; background:var(--bg); overflow:hidden;
+    position:relative; margin:0 auto;
     display:flex; flex-direction:column;}
+  @media (min-width:481px){
+    .phone{height:90dvh; margin-top:5dvh; border-radius:34px; box-shadow:0 30px 70px rgba(0,0,0,0.5); border:8px solid #16231C;}
+  }
   .statusbar{height:28px; display:flex; align-items:center; justify-content:space-between;
     padding:0 20px; font-size:12px; font-weight:700; flex-shrink:0;}
   .topbar{padding:4px 18px 10px; flex-shrink:0;}
   .topbar .greet{font-size:12px; color:var(--muted);}
   .topbar .name{font-size:19px; font-weight:800; color:var(--strong);}
-  .content{flex:1; overflow-y:auto; padding:0 16px 16px;}
+  .content{flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain; padding:0 16px 16px;}
   .content::-webkit-scrollbar{display:none;}
   .pane{display:none;} .pane.active{display:block;}
 
