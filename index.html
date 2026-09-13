@@ -136,15 +136,79 @@
     padding:8px 12px; font-size:11.5px; font-weight:700; cursor:pointer; flex-shrink:0;
   }
   .install-banner .close{background:transparent; color:#cfe3c9; font-size:16px; padding:0 4px;}
+
+  /* ---------- Auth (signup/login) ---------- */
+  .auth-screen{
+    position:absolute; inset:0; z-index:50; background:var(--bg);
+    display:flex; flex-direction:column; padding:36px 22px; overflow-y:auto;
+  }
+  .auth-screen.hidden{display:none;}
+  .auth-logo{font-size:34px; text-align:center; margin-bottom:4px;}
+  .auth-title{font-size:20px; font-weight:800; color:var(--strong); text-align:center; margin-bottom:4px;}
+  .auth-sub{font-size:12px; color:var(--muted); text-align:center; margin-bottom:22px;}
+  .auth-switch{display:flex; gap:8px; background:var(--chip-off); border-radius:10px; padding:4px; margin-bottom:20px;}
+  .auth-switch button{flex:1; border:none; background:transparent; padding:9px; border-radius:8px;
+    font-size:12.5px; font-weight:700; color:var(--muted); cursor:pointer;}
+  .auth-switch button.on{background:var(--strong); color:#fff;}
+  .auth-form{display:none;} .auth-form.on{display:block;}
+  .auth-field{margin-bottom:14px;}
+  .auth-field label{font-size:11.5px; color:var(--muted); display:block; margin-bottom:6px; font-weight:600;}
+  .auth-field input, .auth-field select{
+    width:100%; padding:11px 12px; border-radius:9px; border:1px solid var(--line);
+    font-size:14px; background:var(--card);
+  }
+  .role-row{display:flex; gap:8px; margin-bottom:14px;}
+  .role-card{flex:1; border:1.5px solid var(--line); border-radius:10px; padding:12px 8px; text-align:center;
+    font-size:11.5px; cursor:pointer; background:var(--card);}
+  .role-card .ri{font-size:20px; margin-bottom:4px;}
+  .role-card.sel{border-color:var(--strong); background:var(--card); box-shadow:0 0 0 2px var(--strong) inset;}
+  .auth-submit{background:var(--accent); color:#fff; border:none; padding:13px; width:100%; border-radius:10px;
+    font-weight:800; font-size:14px; cursor:pointer; margin-top:4px;}
+  .auth-error{color:var(--accent); font-size:11.5px; margin:-6px 0 12px; display:none;}
+  .auth-note{font-size:10px; color:var(--muted); text-align:center; margin-top:16px; line-height:1.5;}
 </style>
 </head>
 <body>
 <div class="phone">
+  <div class="auth-screen" id="authScreen">
+    <div class="auth-logo">🌱</div>
+    <div class="auth-title">Eco-Agro Loop</div>
+    <div class="auth-sub">จับคู่ของเหลือทิ้งกับผู้รับซื้อ ใกล้บ้านคุณ</div>
+
+    <div class="auth-switch">
+      <button class="on" id="btnShowSignup" onclick="switchAuth('signup')">สมัครสมาชิก</button>
+      <button id="btnShowLogin" onclick="switchAuth('login')">เข้าสู่ระบบ</button>
+    </div>
+
+    <form class="auth-form on" id="signupForm">
+      <div class="auth-field"><label>ชื่อ-นามสกุล</label><input type="text" id="suName" placeholder="เช่น สมชาย ใจดี" required></div>
+      <div class="auth-field"><label>เบอร์โทรศัพท์</label><input type="tel" id="suPhone" placeholder="08X-XXX-XXXX" required></div>
+      <div class="auth-field">
+        <label>บทบาทของคุณ</label>
+        <div class="role-row">
+          <div class="role-card sel" id="roleSeller" onclick="selectRole('seller')"><div class="ri">🌾</div>ผู้ขาย<br>(เกษตรกร/ผู้ผลิต)</div>
+          <div class="role-card" id="roleBuyer" onclick="selectRole('buyer')"><div class="ri">🏭</div>ผู้ซื้อ<br>(โรงงาน/ผู้รับซื้อ)</div>
+        </div>
+      </div>
+      <div class="auth-field"><label>จังหวัด</label><select id="suProvince"></select></div>
+      <div class="auth-error" id="signupError">เบอร์นี้มีบัญชีอยู่แล้ว กรุณาเข้าสู่ระบบแทน</div>
+      <button type="submit" class="auth-submit">สร้างบัญชี</button>
+    </form>
+
+    <form class="auth-form" id="loginForm">
+      <div class="auth-field"><label>เบอร์โทรศัพท์ที่เคยสมัคร</label><input type="tel" id="liPhone" placeholder="08X-XXX-XXXX" required></div>
+      <div class="auth-error" id="loginError">ไม่พบบัญชีนี้ กรุณาสมัครสมาชิกก่อน</div>
+      <button type="submit" class="auth-submit">เข้าสู่ระบบ</button>
+    </form>
+
+    <div class="auth-note">เดโมนี้เก็บข้อมูลไว้ในเครื่องนี้เท่านั้น ยังไม่ใช่ระบบสมาชิกที่ใช้งานจริง</div>
+  </div>
+
   <div class="statusbar"><span>9:41</span><span>Eco-Agro Loop</span><span>🔋</span></div>
 
   <!-- HOME -->
   <div id="tab-home" class="pane active">
-    <div class="topbar"><div class="greet">สวัสดีตอนเช้า</div><div class="name">คุณสมชาย ใจดี</div></div>
+    <div class="topbar"><div class="greet">สวัสดีตอนเช้า</div><div class="name" id="greetName">–</div></div>
     <div class="content">
       <div class="hero">
         <div class="pts-label">แต้มคาร์บอนสะสม</div>
@@ -245,8 +309,8 @@
     <div class="content">
       <div class="profile-head">
         <div class="avatar-big"></div>
-        <div style="font-size:16px; font-weight:800;">คุณสมชาย ใจดี</div>
-        <div style="font-size:12px; color:var(--accent); font-weight:700;">🌱 ระดับ ต้นกล้า · 2,480 แต้ม</div>
+        <div style="font-size:16px; font-weight:800;" id="profileName">–</div>
+        <div style="font-size:12px; color:var(--accent); font-weight:700;" id="profileRole">–</div>
       </div>
       <div class="sec-h"><h3>เหรียญตราที่สะสมได้</h3></div>
       <div class="badge-grid">
@@ -255,6 +319,7 @@
       </div>
       <div class="reward-btn">แลกแต้มเป็นส่วนลดปุ๋ย/เมล็ดพันธุ์</div>
       <div class="line-btn">เชื่อมต่อกับ LINE เพื่อรับแจ้งเตือน</div>
+      <div class="line-btn" style="background:var(--muted); margin-top:8px;" onclick="logout()">ออกจากระบบ</div>
     </div>
   </div>
 
@@ -326,6 +391,90 @@ const originSel = document.getElementById('originSel');
 Object.entries(PROVINCES).forEach(([key,v])=>{
   const o=document.createElement('option'); o.value=key; o.textContent=v.label; originSel.appendChild(o);
 });
+const suProvinceSel = document.getElementById('suProvince');
+Object.entries(PROVINCES).forEach(([key,v])=>{
+  const o=document.createElement('option'); o.value=key; o.textContent=v.label; suProvinceSel.appendChild(o);
+});
+
+// ---------- Auth (mock, localStorage only) ----------
+const ACCOUNTS_KEY = 'ecoagro_accounts';
+const CURRENT_KEY = 'ecoagro_current';
+let selectedRole = 'seller';
+
+function getAccounts(){ return JSON.parse(localStorage.getItem(ACCOUNTS_KEY) || '{}'); }
+function saveAccounts(a){ localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(a)); }
+function getCurrentUser(){
+  const phone = localStorage.getItem(CURRENT_KEY);
+  if(!phone) return null;
+  return getAccounts()[phone] || null;
+}
+
+function selectRole(role){
+  selectedRole = role;
+  document.getElementById('roleSeller').classList.toggle('sel', role==='seller');
+  document.getElementById('roleBuyer').classList.toggle('sel', role==='buyer');
+}
+
+function switchAuth(which){
+  document.getElementById('btnShowSignup').classList.toggle('on', which==='signup');
+  document.getElementById('btnShowLogin').classList.toggle('on', which==='login');
+  document.getElementById('signupForm').classList.toggle('on', which==='signup');
+  document.getElementById('loginForm').classList.toggle('on', which==='login');
+}
+
+function applyUser(user){
+  const roleLabel = user.role === 'buyer' ? '🏭 ผู้ซื้อ (โรงงาน/ผู้รับซื้อ)' : '🌾 ผู้ขาย (เกษตรกร/ผู้ผลิต)';
+  document.getElementById('greetName').textContent = user.name;
+  document.getElementById('profileName').textContent = user.name;
+  document.getElementById('profileRole').textContent = roleLabel + ' · ' + user.provinceLabel;
+  document.getElementById('authScreen').classList.add('hidden');
+}
+
+function logout(){
+  localStorage.removeItem(CURRENT_KEY);
+  location.reload();
+}
+
+document.getElementById('signupForm').addEventListener('submit', function(e){
+  e.preventDefault();
+  const name = document.getElementById('suName').value.trim();
+  const phone = document.getElementById('suPhone').value.trim();
+  const province = suProvinceSel.value;
+  const errEl = document.getElementById('signupError');
+  errEl.style.display = 'none';
+  if(!name || !phone) return;
+
+  const accounts = getAccounts();
+  if(accounts[phone]){
+    errEl.style.display = 'block';
+    return;
+  }
+  accounts[phone] = { name, phone, role: selectedRole, province, provinceLabel: PROVINCES[province].label };
+  saveAccounts(accounts);
+  localStorage.setItem(CURRENT_KEY, phone);
+  applyUser(accounts[phone]);
+});
+
+document.getElementById('loginForm').addEventListener('submit', function(e){
+  e.preventDefault();
+  const phone = document.getElementById('liPhone').value.trim();
+  const errEl = document.getElementById('loginError');
+  const accounts = getAccounts();
+  if(!accounts[phone]){
+    errEl.style.display = 'block';
+    return;
+  }
+  errEl.style.display = 'none';
+  localStorage.setItem(CURRENT_KEY, phone);
+  applyUser(accounts[phone]);
+});
+
+// on load: skip auth screen if already logged in on this device
+(function initAuth(){
+  const user = getCurrentUser();
+  if(user) applyUser(user);
+})();
+
 
 document.getElementById('qtyRange').addEventListener('input', (e)=>{
   document.getElementById('qtyVal').textContent = parseFloat(e.target.value).toFixed(1)+" ตัน";
