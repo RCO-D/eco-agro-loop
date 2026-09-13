@@ -170,6 +170,18 @@
     font-weight:800; font-size:14px; cursor:pointer; margin-top:4px;}
   .auth-error{color:var(--accent); font-size:11.5px; margin:-6px 0 12px; display:none;}
   .auth-note{font-size:10px; color:var(--muted); text-align:center; margin-top:16px; line-height:1.5;}
+
+  /* ---------- Buy waste listings ---------- */
+  .listing-card{background:var(--card); border:1px solid var(--line); border-radius:10px; padding:13px 14px; margin-bottom:11px;}
+  .listing-card .l-top{display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:6px;}
+  .listing-card .l-type{font-size:13.5px; font-weight:800; color:var(--strong);}
+  .listing-card .l-qty{font-size:11.5px; color:var(--muted);}
+  .listing-card .l-price{font-size:15px; font-weight:800; color:var(--strong); text-align:right;}
+  .listing-card .l-unit{font-size:10px; color:var(--muted); text-align:right;}
+  .listing-card .l-meta{font-size:11px; color:var(--muted); margin-bottom:10px;}
+  .buy-btn{width:100%; border:none; background:var(--accent); color:#fff; font-weight:800; font-size:12.5px;
+    padding:10px; border-radius:8px; cursor:pointer;}
+  .buy-btn.sent{background:var(--card-alt); color:var(--strong); border:1.5px solid var(--strong); cursor:default;}
 </style>
 </head>
 <body>
@@ -229,7 +241,7 @@
       <div class="feat"><b>🤝 ชวนเพื่อนได้แต้ม</b>ชวนเกษตรกรใกล้บ้าน รับแต้มคาร์บอนพิเศษทันที</div>
       <div class="sec-h"><h3>ผู้รับซื้อใกล้คุณ</h3><span>ดูทั้งหมด</span></div>
       <div class="hscroll" id="homeBuyers"></div>
-      <div class="sec-h"><h3>ราคาตลาดวันนี้</h3><span>ดูทั้งหมด</span></div>
+      <div class="sec-h"><h3>ราคาตลาดวันนี้</h3><span onclick="goTab('market')" style="cursor:pointer; text-decoration:underline;">ดูทั้งหมด</span></div>
       <div class="hscroll">
         <div class="pill"><div class="pn">ข้าวโพด</div><div class="pv">฿9.20</div></div>
         <div class="pill"><div class="pn">มันสำปะหลัง</div><div class="pv">฿2.85</div></div>
@@ -278,9 +290,21 @@
     </div>
   </div>
 
+  <!-- BUY WASTE -->
+  <div id="tab-buy" class="pane">
+    <div class="topbar"><div class="name">ซื้อของเหลือ</div></div>
+    <div class="content">
+      <div class="chip-row" id="buyFilterChips"></div>
+      <div id="buyListings"></div>
+    </div>
+  </div>
+
   <!-- MARKET -->
   <div id="tab-market" class="pane">
-    <div class="topbar"><div class="name">ราคาตลาด</div></div>
+    <div class="topbar">
+      <div class="greet" onclick="goTab('home')" style="cursor:pointer;">← กลับหน้าแรก</div>
+      <div class="name">ราคาตลาด</div>
+    </div>
     <div class="content">
       <div class="market-row"><div><div class="n">ข้าวโพดเลี้ยงสัตว์</div><div class="u">บาท/กก.</div></div><div class="up">฿9.20 ▲</div></div>
       <div class="market-row"><div><div class="n">มันสำปะหลัง</div><div class="u">บาท/กก.</div></div><div class="down">฿2.85 ▼</div></div>
@@ -331,7 +355,7 @@
   <div class="bottomnav">
     <div class="nav-item active" data-tab="home" onclick="goTab('home',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg>หน้าแรก</div>
     <div class="nav-item" data-tab="list" onclick="goTab('list',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h10"/></svg>แจ้งของเหลือ</div>
-    <div class="nav-item" data-tab="market" onclick="goTab('market',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19V10M10 19V4M16 19v-7M22 19V13"/></svg>ราคาตลาด</div>
+    <div class="nav-item" data-tab="buy" onclick="goTab('buy',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6h15l-1.5 9h-12L6 6z"/><path d="M6 6L5 3H2"/><circle cx="9" cy="20" r="1.5"/><circle cx="17" cy="20" r="1.5"/></svg>ซื้อของเหลือ</div>
     <div class="nav-item" data-tab="community" onclick="goTab('community',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 01-8.5 8.5A8.38 8.38 0 014 11.5a8.5 8.5 0 1117 0z"/></svg>ชุมชน</div>
     <div class="nav-item" data-tab="profile" onclick="goTab('profile',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>โปรไฟล์</div>
   </div>
@@ -552,6 +576,70 @@ function renderHomeBuyers(){
 }
 renderHomeBuyers();
 
+// ---------- Buy waste listings (mock feed for buyer role) ----------
+const WASTE_LISTINGS = [
+  {seller:"สมชาย ใจดี", province:"เชียงใหม่", wasteKey:"pineapple_peel", qty:2.0, posted:"2 ชม.ที่แล้ว"},
+  {seller:"สมหญิง แสงดี", province:"นครราชสีมา", wasteKey:"corn_cob", qty:8.5, posted:"5 ชม.ที่แล้ว"},
+  {seller:"ประวิทย์ คงดี", province:"ประจวบคีรีขันธ์", wasteKey:"coffee_grounds", qty:1.2, posted:"เมื่อวาน"},
+  {seller:"วิไล ทองดี", province:"ขอนแก่น", wasteKey:"rice_husk", qty:12.0, posted:"เมื่อวาน"},
+  {seller:"อนันต์ พูนดี", province:"สุราษฎร์ธานี", wasteKey:"cassava_pulp", qty:5.0, posted:"2 วันที่แล้ว"},
+  {seller:"มาลี ศรีดี", province:"ราชบุรี", wasteKey:"pineapple_peel", qty:6.0, posted:"2 วันที่แล้ว"}
+];
+let buyFilter = "all";
+
+function renderBuyChips(){
+  const el = document.getElementById('buyFilterChips');
+  el.innerHTML = "";
+  const allChip = document.createElement('div');
+  allChip.className = "chip sel";
+  allChip.textContent = "ทั้งหมด";
+  allChip.onclick = ()=> setBuyFilter("all", allChip);
+  el.appendChild(allChip);
+  Object.entries(WASTE_KB).forEach(([key,v])=>{
+    const c = document.createElement('div');
+    c.className = "chip";
+    c.textContent = v.label;
+    c.onclick = ()=> setBuyFilter(key, c);
+    el.appendChild(c);
+  });
+}
+function setBuyFilter(key, el){
+  buyFilter = key;
+  document.querySelectorAll('#buyFilterChips .chip').forEach(c=>c.classList.remove('sel'));
+  el.classList.add('sel');
+  renderBuyListings();
+}
+function renderBuyListings(){
+  const el = document.getElementById('buyListings');
+  el.innerHTML = "";
+  const items = WASTE_LISTINGS.filter(l => buyFilter==="all" || l.wasteKey===buyFilter);
+  if(items.length===0){
+    el.innerHTML = `<div class="feat">ยังไม่มีประกาศของเหลือประเภทนี้ในตอนนี้</div>`;
+    return;
+  }
+  items.forEach((l,i)=>{
+    const kb = WASTE_KB[l.wasteKey];
+    const price = kb.uses[0].value;
+    el.innerHTML += `
+      <div class="listing-card">
+        <div class="l-top">
+          <div><div class="l-type">${kb.label}</div><div class="l-qty">${l.qty.toFixed(1)} ตัน · ${l.province}</div></div>
+          <div><div class="l-price">${fmtBaht(price)}</div><div class="l-unit">ต่อตัน</div></div>
+        </div>
+        <div class="l-meta">ผู้ขาย: ${l.seller} · ลงประกาศ ${l.posted}</div>
+        <button class="buy-btn" id="buyBtn${i}" onclick="sendBuyRequest(${i})">สนใจซื้อ</button>
+      </div>`;
+  });
+}
+function sendBuyRequest(i){
+  const btn = document.getElementById('buyBtn'+i);
+  btn.textContent = "✓ ส่งคำขอซื้อแล้ว";
+  btn.classList.add('sent');
+  btn.onclick = null;
+}
+renderBuyChips();
+renderBuyListings();
+
 function runAnalysis(){
   const kb = WASTE_KB[selectedWaste];
   const qty = parseFloat(document.getElementById('qtyRange').value);
@@ -597,7 +685,8 @@ function goTab(name, el){
   document.querySelectorAll('.pane').forEach(p=>p.classList.remove('active'));
   document.getElementById('tab-'+name).classList.add('active');
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
-  (el || document.querySelector(`.nav-item[data-tab="${name}"]`)).classList.add('active');
+  const navTarget = el || document.querySelector(`.nav-item[data-tab="${name}"]`);
+  if(navTarget) navTarget.classList.add('active');
   const contentEl = document.getElementById('tab-'+name).querySelector('.content');
   if (contentEl) contentEl.scrollTop = 0;
   window.scrollTo(0,0);
