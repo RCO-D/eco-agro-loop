@@ -247,6 +247,9 @@
   .location-status{font-size:12px; color:var(--muted); margin-bottom:10px; font-weight:600;}
   .location-status.ok{color:var(--strong);}
   .location-card input{width:100%; padding:10px 12px; border-radius:8px; border:1px solid var(--line); font-size:13px;}
+
+  .partner-card{cursor:pointer;}
+  .partner-detail{margin-top:8px; font-size:11px; color:var(--muted); border-top:1px solid var(--line); padding-top:8px; line-height:1.6;}
 </style>
 </head>
 <body>
@@ -304,7 +307,7 @@
       </button>
       <div class="feat dash"><b>🔒 ล็อกราคาล่วงหน้า</b>จองราคากับผู้ซื้อก่อนถึงฤดูเก็บเกี่ยว ลดความเสี่ยงราคาผันผวน</div>
       <div class="feat"><b>🤝 ชวนเพื่อนได้แต้ม</b>ชวนเกษตรกรใกล้บ้าน รับแต้มคาร์บอนพิเศษทันที</div>
-      <div class="sec-h"><h3>ผู้รับซื้อใกล้คุณ</h3><span>ดูทั้งหมด</span></div>
+      <div class="sec-h"><h3>ผู้รับซื้อ/ขาย ใกล้คุณ</h3><span onclick="goTab('directory')" style="cursor:pointer; text-decoration:underline;">ดูทั้งหมด</span></div>
       <div class="hscroll" id="homeBuyers"></div>
       <div class="sec-h"><h3>ราคาตลาดวันนี้</h3><span onclick="goTab('market')" style="cursor:pointer; text-decoration:underline;">ดูทั้งหมด</span></div>
       <div class="hscroll">
@@ -362,6 +365,35 @@
     <div class="content">
       <div class="chip-row" id="buyFilterChips"></div>
       <div id="buyListings"></div>
+    </div>
+  </div>
+
+  <!-- DIRECTORY (buyers/sellers near you) -->
+  <div id="tab-directory" class="pane">
+    <div class="topbar">
+      <div class="greet" onclick="goTab('home')" style="cursor:pointer;">← กลับหน้าแรก</div>
+      <div class="name">ผู้รับซื้อ/ขาย</div>
+    </div>
+    <div class="tabswitch">
+      <button class="on" id="btnDirBuyers" onclick="switchDirectory('buyers')">ผู้รับซื้อ</button>
+      <button id="btnDirSellers" onclick="switchDirectory('sellers')">ผู้ขาย</button>
+    </div>
+    <div class="content">
+      <button class="go" id="postBuyReqBtn" style="margin-bottom:16px;" onclick="togglePostBuyForm()">+ โพสต์ความต้องการรับซื้อ</button>
+      <div id="postBuyForm" style="display:none;">
+        <div class="field"><label>ชื่อ (ผู้รับซื้อ/บริษัท)</label><input type="text" id="buyReqName"></div>
+        <div class="sec-h"><h3>ประเภทที่ต้องการรับซื้อ</h3></div>
+        <div class="chip-row" id="buyReqChips"></div>
+        <div class="qtybox">
+          <label>ปริมาณที่ต้องการ (ตัน)</label>
+          <input type="range" id="buyReqQtyRange" min="0.5" max="50" step="0.5" value="5">
+          <div class="val" id="buyReqQtyVal">5.0 ตัน</div>
+        </div>
+        <div class="field"><label>สถานที่ปลายทาง (จังหวัด)</label><select id="buyReqProvince"></select></div>
+        <button class="go" onclick="submitBuyRequest()">📢 โพสต์ความต้องการ</button>
+      </div>
+      <div class="chip-row" id="dirFilterChips"></div>
+      <div id="buyerDirectoryList"></div>
     </div>
   </div>
 
@@ -869,6 +901,215 @@ function interestInListing(i){
   openChatThread(convId);
 }
 
+// ---------- Directory: buyers who want to buy (self-posted demand) ----------
+const BUY_REQUESTS_KEY = 'ecoagro_buy_requests';
+function getBuyRequests(){ return JSON.parse(localStorage.getItem(BUY_REQUESTS_KEY) || '[]'); }
+function saveBuyRequests(arr){ localStorage.setItem(BUY_REQUESTS_KEY, JSON.stringify(arr)); }
+
+let selectedBuyReqWaste = 'pineapple_peel';
+let currentBuyReqItems = [];
+let buyReqProvinceLoaded = false;
+let dirFilter = 'all';
+
+function renderDirFilterChips(){
+  const el = document.getElementById('dirFilterChips');
+  el.innerHTML = "";
+  const allChip = document.createElement('div');
+  allChip.className = "chip sel";
+  allChip.textContent = "ทั้งหมด";
+  allChip.onclick = ()=> setDirFilter('all', allChip);
+  el.appendChild(allChip);
+  Object.entries(WASTE_KB).forEach(([key,v])=>{
+    const c = document.createElement('div');
+    c.className = "chip";
+    c.textContent = v.label;
+    c.onclick = ()=> setDirFilter(key, c);
+    el.appendChild(c);
+  });
+}
+function setDirFilter(key, el){
+  dirFilter = key;
+  document.querySelectorAll('#dirFilterChips .chip').forEach(c=>c.classList.remove('sel'));
+  el.classList.add('sel');
+  renderBuyerDirectory();
+}
+
+function switchDirectory(which){
+  if(which === 'sellers'){
+    goTab('buy'); // sellers' waste listings already live in the "ซื้อของเหลือ" tab — reuse it directly
+    return;
+  }
+  document.getElementById('btnDirBuyers').classList.add('on');
+  document.getElementById('btnDirSellers').classList.remove('on');
+  renderBuyerDirectory();
+}
+
+function togglePostBuyForm(){
+  const form = document.getElementById('postBuyForm');
+  const opening = form.style.display === 'none';
+  form.style.display = opening ? 'block' : 'none';
+  if(!opening) return;
+  const user = getCurrentUser();
+  document.getElementById('buyReqName').value = user ? user.name : '';
+  renderBuyReqChips();
+  if(!buyReqProvinceLoaded){
+    const sel = document.getElementById('buyReqProvince');
+    Object.entries(PROVINCES).forEach(([key,v])=>{
+      const o=document.createElement('option'); o.value=key; o.textContent=v.label; sel.appendChild(o);
+    });
+    buyReqProvinceLoaded = true;
+  }
+  if(user) document.getElementById('buyReqProvince').value = user.province;
+}
+
+function renderBuyReqChips(){
+  const el = document.getElementById('buyReqChips');
+  el.innerHTML = "";
+  Object.entries(WASTE_KB).forEach(([key,v])=>{
+    const c = document.createElement('div');
+    c.className = "chip" + (key===selectedBuyReqWaste ? " sel":"");
+    c.textContent = v.label;
+    c.onclick = ()=>{
+      selectedBuyReqWaste = key;
+      document.querySelectorAll('#buyReqChips .chip').forEach(x=>x.classList.remove('sel'));
+      c.classList.add('sel');
+    };
+    el.appendChild(c);
+  });
+}
+
+document.getElementById('buyReqQtyRange').addEventListener('input', (e)=>{
+  document.getElementById('buyReqQtyVal').textContent = parseFloat(e.target.value).toFixed(1)+" ตัน";
+});
+
+function submitBuyRequest(){
+  const user = getCurrentUser();
+  if(!user) return;
+  const name = document.getElementById('buyReqName').value.trim() || user.name;
+  const qty = parseFloat(document.getElementById('buyReqQtyRange').value);
+  const province = document.getElementById('buyReqProvince').value;
+  const reqs = getBuyRequests();
+  reqs.unshift({
+    id: 'B' + Date.now(),
+    buyerPhone: user.phone,
+    name: name,
+    wasteKey: selectedBuyReqWaste,
+    qty: qty,
+    destProvince: province,
+    destProvinceLabel: PROVINCES[province].label,
+    postedAt: 'เพิ่งโพสต์'
+  });
+  saveBuyRequests(reqs);
+  document.getElementById('postBuyForm').style.display = 'none';
+  renderBuyerDirectory();
+}
+
+function renderBuyerDirectory(){
+  const el = document.getElementById('buyerDirectoryList');
+  el.innerHTML = '';
+
+  const filterCategory = dirFilter === 'all' ? null : WASTE_KB[dirFilter].category;
+  const matchedBuyers = BUYERS.filter(b => !filterCategory || b.accepts.includes(filterCategory));
+
+  el.innerHTML += `<div class="sec-h"><h3>บริษัทรับซื้อพันธมิตร</h3></div>`;
+  if(matchedBuyers.length===0){
+    el.innerHTML += `<div class="feat">ไม่มีพันธมิตรที่รับซื้อประเภทนี้ในตอนนี้</div>`;
+  }
+  matchedBuyers.forEach((b,i)=>{
+    el.innerHTML += `
+      <div class="buyer partner-card" style="width:100%; margin-bottom:8px;" onclick="togglePartnerInfo(${i})">
+        <div class="bn">${b.name}</div><div class="bt">${b.type}</div><div class="bd">📍 รับซื้อ ~${b.demand} ตัน/ด.</div>
+        <div class="partner-detail" id="partnerDetail${i}" style="display:none;">
+          รับซื้อประเภท: ${b.accepts.map(c=>Object.values(WASTE_KB).find(w=>w.category===c)?.label).filter(Boolean).join(', ')}<br>
+          พื้นที่: ${PROVINCES[b.loc]?.label || '-'} · ติดต่อผ่านแชทหลังจากที่คุณมีของพร้อมขาย
+        </div>
+      </div>`;
+  });
+
+  const user = getCurrentUser();
+  const reqs = getBuyRequests().filter(r => !r.closed && (dirFilter==='all' || r.wasteKey===dirFilter));
+  el.innerHTML += `<div class="sec-h" style="margin-top:16px;"><h3>ความต้องการที่โพสต์โดยผู้ใช้</h3></div>`;
+  currentBuyReqItems = reqs;
+  if(reqs.length===0){
+    el.innerHTML += `<div class="feat">ยังไม่มีใครโพสต์ความต้องการรับซื้อประเภทนี้ — เป็นคนแรกได้เลย</div>`;
+    return;
+  }
+  reqs.forEach((r,i)=>{
+    const kb = WASTE_KB[r.wasteKey];
+    const isMine = user && r.buyerPhone === user.phone;
+    el.innerHTML += `
+      <div class="listing-card">
+        <div class="l-top">
+          <div><div class="l-type">${kb.label}</div><div class="l-qty">ต้องการ ${r.qty.toFixed(1)} ตัน · ส่งที่ ${r.destProvinceLabel}</div></div>
+        </div>
+        <div class="l-meta">ผู้รับซื้อ: ${escapeHtml(r.name)} · ${r.postedAt}</div>
+        ${isMine
+          ? `<button class="buy-btn" style="background:var(--muted);" onclick="closeBuyRequest('${r.id}')">✕ ปิดประกาศ</button>`
+          : `<button class="buy-btn" id="buyReqBtn${i}" onclick="interestInBuyRequest(${i})">สนใจขายให้</button>`
+        }
+      </div>`;
+  });
+}
+
+function togglePartnerInfo(i){
+  const el = document.getElementById('partnerDetail'+i);
+  if(el) el.style.display = (el.style.display === 'none') ? 'block' : 'none';
+}
+
+function closeBuyRequest(id){
+  const reqs = getBuyRequests();
+  const req = reqs.find(r => r.id === id);
+  if(!req) return;
+  req.closed = true;
+  saveBuyRequests(reqs);
+  renderBuyerDirectory();
+}
+
+function interestInBuyRequest(i){
+  const user = getCurrentUser();
+  if(!user) return;
+  const req = currentBuyReqItems[i];
+  if(!req) return;
+  if(req.buyerPhone === user.phone){
+    alert('นี่คือประกาศของคุณเอง');
+    return;
+  }
+  const kb = WASTE_KB[req.wasteKey];
+  const convId = req.id + '::' + user.phone;
+  const chats = getChats();
+  if(!chats[convId]){
+    chats[convId] = {
+      listingId: req.id,
+      sellerPhone: user.phone,
+      sellerName: user.name,
+      buyerPhone: req.buyerPhone,
+      buyerName: req.name,
+      wasteLabel: kb.label,
+      wasteKey: req.wasteKey,
+      qty: req.qty,
+      originProvince: user.province,
+      originProvinceLabel: user.provinceLabel,
+      originLat: user.lat || null,
+      originLng: user.lng || null,
+      originAddressLabel: user.addressLabel || '',
+      destProvince: req.destProvince,
+      destProvinceLabel: req.destProvinceLabel,
+      destLat: null,
+      destLng: null,
+      destAddressLabel: '',
+      messages: [
+        { from: user.phone, text: `สนใจขาย${kb.label}ให้ ${req.qty.toFixed(1)} ตัน ครับ/ค่ะ`, time: nowLabel() }
+      ],
+      deal: { status: 'none' },
+      updatedAt: Date.now()
+    };
+    saveChats(chats);
+  }
+  const btn = document.getElementById('buyReqBtn'+i);
+  if(btn){ btn.textContent = '✓ ส่งข้อเสนอแล้ว'; btn.classList.add('sent'); btn.onclick = null; }
+  openChatThread(convId);
+}
+
 let activeConvId = null;
 
 function openChatThread(convId){
@@ -1149,6 +1390,8 @@ function switchCommunity(which){
 
 renderBuyChips();
 renderBuyListings();
+renderDirFilterChips();
+renderBuyerDirectory();
 
 function runAnalysis(){
   const kb = WASTE_KB[selectedWaste];
