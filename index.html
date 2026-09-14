@@ -215,7 +215,20 @@
   }
   .chat-input-bar input{flex:1; border:1px solid var(--line); border-radius:20px; padding:10px 14px; font-size:13px;}
   .chat-input-bar button{background:var(--accent); color:#fff; border:none; border-radius:20px; padding:0 18px; font-weight:700; font-size:13px;}
+  .chat-input-bar .deal-btn{padding:0; width:44px; flex-shrink:0; background:var(--strong); font-size:17px;}
   @media (min-width:481px){ .chat-input-bar{position:absolute;} }
+
+  .deal-card{background:var(--card-alt); border:1.5px dashed var(--accent); border-radius:12px; padding:14px; margin:4px 0 14px; text-align:center;}
+  .deal-card .dt{font-size:12.5px; font-weight:800; color:var(--strong); margin-bottom:10px;}
+  .deal-row{display:flex; gap:8px;}
+  .deal-row button{flex:1; padding:10px 6px; border-radius:9px; border:1.5px solid var(--line);
+    background:var(--card); font-size:11.5px; font-weight:700; cursor:pointer; color:var(--ink);}
+  .deal-row button.mine{border-color:var(--strong); background:var(--strong); color:#fff;}
+  .deal-row button:disabled{opacity:.45; cursor:default;}
+  .deal-status{font-size:11px; color:var(--muted); margin-top:8px;}
+  .deal-form select, .deal-form input{width:100%; margin-bottom:8px; padding:9px; border-radius:8px; border:1px solid var(--line); font-size:13px;}
+  .deal-form button{width:100%; background:var(--accent); color:#fff; border:none; padding:10px; border-radius:9px; font-weight:800; font-size:13px; cursor:pointer;}
+  .deal-success{background:var(--teal); color:#eafff9; border-radius:12px; padding:16px; margin:4px 0 14px; text-align:center; font-size:13px; font-weight:700; line-height:1.6;}
 </style>
 </head>
 <body>
@@ -385,6 +398,7 @@
     </div>
     <div class="content" id="chatMessages" style="padding-bottom:150px;"></div>
     <div class="chat-input-bar">
+      <button class="deal-btn" id="dealBtn" onclick="proposeDeal()" title="ตกลงการค้า/ขาย">🤝</button>
       <input type="text" id="chatInput" placeholder="พิมพ์ข้อความ...">
       <button onclick="sendChatMessage()">ส่ง</button>
     </div>
@@ -564,15 +578,14 @@ function logout(){
   location.reload();
 }
 
-function awardPoints(qty){
-  const phone = localStorage.getItem(CURRENT_KEY);
-  if(!phone) return; // not logged in (shouldn't happen, auth screen gates this)
+function awardPointsTo(phone, qty){
   const accounts = getAccounts();
   const user = accounts[phone];
   if(!user) return;
   user.points = (user.points || 0) + Math.round(qty * 1000);
   saveAccounts(accounts);
-  renderHero(user);
+  const current = getCurrentUser();
+  if(current && current.phone === phone) renderHero(user); // refresh live if it's the viewer's own points
 }
 
 document.getElementById('signupForm').addEventListener('submit', function(e){
@@ -706,7 +719,7 @@ function renderBuyListings(){
   const el = document.getElementById('buyListings');
   el.innerHTML = "";
   const combined = [...getListings(), ...WASTE_LISTINGS_MOCK];
-  currentBuyItems = combined.filter(l => buyFilter==="all" || l.wasteKey===buyFilter);
+  currentBuyItems = combined.filter(l => (buyFilter==="all" || l.wasteKey===buyFilter) && !isListingSold(l.id));
   if(currentBuyItems.length===0){
     el.innerHTML = `<div class="feat">ยังไม่มีประกาศของเหลือประเภทนี้ในตอนนี้</div>`;
     return;
@@ -750,10 +763,12 @@ function interestInListing(i){
       buyerPhone: user.phone,
       buyerName: user.name,
       wasteLabel: kb.label,
+      wasteKey: listing.wasteKey,
       qty: listing.qty,
       messages: [
         { from: user.phone, text: `สนใจซื้อ${kb.label} ${listing.qty.toFixed(1)} ตัน ครับ/ค่ะ`, time: nowLabel() }
       ],
+      deal: { status: 'none' },
       updatedAt: Date.now()
     };
     saveChats(chats);
@@ -790,6 +805,111 @@ function renderChatThread(){
         </div>
       </div>`;
   });
+
+  // ---------- deal confirmation flow ----------
+  const myRole = user.phone === conv.sellerPhone ? 'seller' : 'buyer';
+  const deal = conv.deal || {status:'none'};
+
+  if(deal.status === 'proposed'){
+    const sellerDone = deal.confirmedBy.seller;
+    const buyerDone = deal.confirmedBy.buyer;
+    msgEl.innerHTML += `
+      <div class="deal-card">
+        <div class="dt">🤝 ยืนยันการตกลงซื้อขาย</div>
+        <div class="deal-row">
+          <button class="${myRole==='seller'?'mine':''}" ${(myRole!=='seller' || sellerDone) ? 'disabled':''} onclick="confirmDeal('seller')">
+            ${sellerDone ? '✅ ฝ่ายขายยืนยันแล้ว' : 'ฝ่ายขาย ยืนยัน'}
+          </button>
+          <button class="${myRole==='buyer'?'mine':''}" ${(myRole!=='buyer' || buyerDone) ? 'disabled':''} onclick="confirmDeal('buyer')">
+            ${buyerDone ? '✅ ฝ่ายซื้อยืนยันแล้ว' : 'ฝ่ายซื้อ ยืนยัน'}
+          </button>
+        </div>
+        <div class="deal-status">${myRole==='seller' ? (sellerDone?'รอฝ่ายซื้อกดยืนยัน':'แตะปุ่ม "ฝ่ายขาย" เพื่อยืนยัน') : (buyerDone?'รอฝ่ายขายกดยืนยัน':'แตะปุ่ม "ฝ่ายซื้อ" เพื่อยืนยัน')}</div>
+      </div>`;
+  } else if(deal.status === 'bothConfirmed'){
+    if(myRole === 'buyer'){
+      const wasteOptions = Object.entries(WASTE_KB)
+        .map(([k,v]) => `<option value="${k}" ${k===conv.wasteKey?'selected':''}>${v.label}</option>`).join('');
+      msgEl.innerHTML += `
+        <div class="deal-card deal-form">
+          <div class="dt">📋 กรอกรายละเอียดซื้อขายขั้นสุดท้าย</div>
+          <select id="dealWasteSel">${wasteOptions}</select>
+          <input type="number" id="dealQtyInput" step="0.1" min="0.1" value="${conv.qty}" placeholder="ปริมาณ (ตัน)">
+          <button onclick="submitFinalDeal()">ยืนยันการซื้อขาย</button>
+        </div>`;
+    } else {
+      msgEl.innerHTML += `
+        <div class="deal-card">
+          <div class="dt">✅ ทั้งสองฝ่ายยืนยันแล้ว</div>
+          <div class="deal-status">รอผู้ซื้อกรอกรายละเอียดสุดท้ายเพื่อปิดการขาย</div>
+        </div>`;
+    }
+  } else if(deal.status === 'completed'){
+    const kb = WASTE_KB[deal.finalWasteKey];
+    msgEl.innerHTML += `
+      <div class="deal-success">🎉 ตกลงซื้อขายสำเร็จ<br>${kb.label} ${deal.finalQty.toFixed(1)} ตัน</div>`;
+  }
+
+  const dealBtn = document.getElementById('dealBtn');
+  if(dealBtn) dealBtn.style.display = (deal.status === 'none') ? 'flex' : 'none';
+}
+
+function proposeDeal(){
+  const chats = getChats();
+  const conv = chats[activeConvId];
+  if(!conv) return;
+  if(!conv.deal || conv.deal.status === 'none'){
+    conv.deal = { status:'proposed', confirmedBy:{seller:false, buyer:false} };
+    saveChats(chats);
+  }
+  renderChatThread();
+}
+
+function confirmDeal(side){
+  const chats = getChats();
+  const conv = chats[activeConvId];
+  const user = getCurrentUser();
+  if(!conv || !user || !conv.deal) return;
+  const myRole = user.phone === conv.sellerPhone ? 'seller' : (user.phone === conv.buyerPhone ? 'buyer' : null);
+  if(myRole !== side) return; // guard: can only confirm your own side, prevents self-confirming both
+  conv.deal.confirmedBy[side] = true;
+  if(conv.deal.confirmedBy.seller && conv.deal.confirmedBy.buyer){
+    conv.deal.status = 'bothConfirmed';
+  }
+  saveChats(chats);
+  renderChatThread();
+}
+
+function submitFinalDeal(){
+  const chats = getChats();
+  const conv = chats[activeConvId];
+  const user = getCurrentUser();
+  if(!conv || !user || user.phone !== conv.buyerPhone) return;
+  const wasteKey = document.getElementById('dealWasteSel').value;
+  const qty = parseFloat(document.getElementById('dealQtyInput').value);
+  if(!qty || qty <= 0) return;
+
+  conv.deal.status = 'completed';
+  conv.deal.finalWasteKey = wasteKey;
+  conv.deal.finalQty = qty;
+  conv.deal.completedAt = Date.now();
+  saveChats(chats);
+
+  markListingSold(conv.listingId);
+  awardPointsTo(conv.sellerPhone, qty);
+
+  renderChatThread();
+  renderBuyListings();
+}
+
+function markListingSold(listingId){
+  const sold = JSON.parse(localStorage.getItem('ecoagro_sold_ids') || '[]');
+  if(!sold.includes(listingId)) sold.push(listingId);
+  localStorage.setItem('ecoagro_sold_ids', JSON.stringify(sold));
+}
+function isListingSold(listingId){
+  const sold = JSON.parse(localStorage.getItem('ecoagro_sold_ids') || '[]');
+  return sold.includes(listingId);
 }
 
 function sendChatMessage(){
@@ -881,8 +1001,6 @@ function runAnalysis(){
       <div class="bn">${i+1}. ${b.name}</div><div class="bt">${b.type}</div><div class="bd">📍 ${fmtKm(b.dist)}</div>
     </div>`;
   });
-
-  awardPoints(qty);
 
   document.getElementById('resultBlock').style.display = 'block';
 }
