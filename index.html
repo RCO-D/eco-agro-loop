@@ -250,6 +250,9 @@
 
   .partner-card{cursor:pointer;}
   .partner-detail{margin-top:8px; font-size:11px; color:var(--muted); border-top:1px solid var(--line); padding-top:8px; line-height:1.6;}
+  .partner-detail-row{display:flex; justify-content:space-between; align-items:center; gap:10px;}
+  .partner-detail-text{flex:1;}
+  .partner-chat-btn{width:auto; flex-shrink:0; padding:8px 14px; font-size:11.5px;}
 </style>
 </head>
 <body>
@@ -257,7 +260,7 @@
   <div class="auth-screen" id="authScreen">
     <div class="auth-logo">🌱</div>
     <div class="auth-title">Eco-Agro Loop</div>
-    <div class="auth-sub">จับคู่ของเหลือทิ้งกับผู้รับซื้อ ใกล้บ้านคุณ</div>
+    <div class="auth-sub">จับคู่เศษเหลือใช้จากอุตสาหกรรมเกษตรกับผู้รับซื้อ ใกล้บ้านคุณ</div>
 
     <div class="auth-switch">
       <button class="on" id="btnShowSignup" onclick="switchAuth('signup')">สมัครสมาชิก</button>
@@ -299,11 +302,11 @@
         <div class="pts-label">แต้มคาร์บอนสะสม</div>
         <div class="row"><div class="pts" id="heroPoints">0</div><div class="badge" id="heroBadge">🌱 ต้นกล้า</div></div>
         <div class="track"><div class="fill" id="heroFill" style="width:0%;"></div></div>
-        <div class="next" id="heroNext">เริ่มแจ้งของเหลือเพื่อสะสมแต้มแรกของคุณ</div>
+        <div class="next" id="heroNext">เริ่มแจ้งเศษเหลือใช้เกษตรเพื่อสะสมแต้มแรกของคุณ</div>
       </div>
       <button class="cta" onclick="goTab('list')">
         <div class="ic">📝</div>
-        <div><div class="t1">แจ้งของเหลือ</div><div class="t2">กรอกประเภท+ปริมาณเอง ให้ AI ประเมินมูลค่า</div></div>
+        <div><div class="t1">แจ้งเศษเหลือใช้เกษตร</div><div class="t2">กรอกประเภท+ปริมาณเอง ให้ AI ประเมินมูลค่า</div></div>
       </button>
       <div class="feat dash"><b>🔒 ล็อกราคาล่วงหน้า</b>จองราคากับผู้ซื้อก่อนถึงฤดูเก็บเกี่ยว ลดความเสี่ยงราคาผันผวน</div>
       <div class="feat"><b>🤝 ชวนเพื่อนได้แต้ม</b>ชวนเกษตรกรใกล้บ้าน รับแต้มคาร์บอนพิเศษทันที</div>
@@ -320,7 +323,7 @@
 
   <!-- LIST -->
   <div id="tab-list" class="pane">
-    <div class="topbar"><div class="name">แจ้งของเหลือ</div></div>
+    <div class="topbar"><div class="name">แจ้งเศษเหลือใช้เกษตร</div></div>
     <div class="content">
       <div class="photo-note">📷 แนบรูปประกอบ (ไม่บังคับ) — ใช้เป็นหลักฐานให้ผู้ซื้อดูสภาพจริง ไม่ใช้คำนวณราคา</div>
 
@@ -361,7 +364,7 @@
 
   <!-- BUY WASTE -->
   <div id="tab-buy" class="pane">
-    <div class="topbar"><div class="name">ซื้อของเหลือ</div></div>
+    <div class="topbar"><div class="name">ซื้อเศษเหลือใช้เกษตร</div></div>
     <div class="content">
       <div class="chip-row" id="buyFilterChips"></div>
       <div id="buyListings"></div>
@@ -407,10 +410,10 @@
       <div class="market-row"><div><div class="n">ข้าวโพดเลี้ยงสัตว์</div><div class="u">บาท/กก.</div></div><div class="up">฿9.20 ▲</div></div>
       <div class="market-row"><div><div class="n">มันสำปะหลัง</div><div class="u">บาท/กก.</div></div><div class="down">฿2.85 ▼</div></div>
       <div class="market-row"><div><div class="n">สับปะรดโรงงาน</div><div class="u">บาท/กก.</div></div><div class="up">฿8.50 ▲</div></div>
-      <div class="market-row"><div><div class="n">กากกาแฟ (ของเหลือ)</div><div class="u">บาท/ตัน</div></div><div class="up">฿1,500 ▲</div></div>
-      <div class="market-row"><div><div class="n">แกลบ (ของเหลือ)</div><div class="u">บาท/ตัน</div></div><div class="down">฿1,400 ▼</div></div>
+      <div class="market-row"><div><div class="n">กากกาแฟ (เศษเหลือใช้เกษตร)</div><div class="u">บาท/ตัน</div></div><div class="up">฿1,500 ▲</div></div>
+      <div class="market-row"><div><div class="n">แกลบ (เศษเหลือใช้เกษตร)</div><div class="u">บาท/ตัน</div></div><div class="down">฿1,400 ▼</div></div>
       <div class="sec-h" style="margin-top:18px;"><h3>ปฏิทินเพาะปลูก</h3></div>
-      <div class="post"><div class="pt">🌽 อีก 12 วัน เข้าสู่ฤดูเก็บเกี่ยวข้าวโพดในพื้นที่ของคุณ — เตรียมแจ้งของเหลือล่วงหน้าได้เลย</div></div>
+      <div class="post"><div class="pt">🌽 อีก 12 วัน เข้าสู่ฤดูเก็บเกี่ยวข้าวโพดในพื้นที่ของคุณ — เตรียมแจ้งเศษเหลือใช้เกษตรล่วงหน้าได้เลย</div></div>
     </div>
   </div>
 
@@ -482,8 +485,8 @@
 
   <div class="bottomnav">
     <div class="nav-item active" data-tab="home" onclick="goTab('home',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg>หน้าแรก</div>
-    <div class="nav-item" data-tab="list" onclick="goTab('list',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h10"/></svg>แจ้งของเหลือ</div>
-    <div class="nav-item" data-tab="buy" onclick="goTab('buy',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6h15l-1.5 9h-12L6 6z"/><path d="M6 6L5 3H2"/><circle cx="9" cy="20" r="1.5"/><circle cx="17" cy="20" r="1.5"/></svg>ซื้อของเหลือ</div>
+    <div class="nav-item" data-tab="list" onclick="goTab('list',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h10"/></svg>แจ้งเศษเกษตร</div>
+    <div class="nav-item" data-tab="buy" onclick="goTab('buy',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6h15l-1.5 9h-12L6 6z"/><path d="M6 6L5 3H2"/><circle cx="9" cy="20" r="1.5"/><circle cx="17" cy="20" r="1.5"/></svg>ซื้อเศษเกษตร</div>
     <div class="nav-item" data-tab="community" onclick="goTab('community',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 01-8.5 8.5A8.38 8.38 0 014 11.5a8.5 8.5 0 1117 0z"/></svg>ชุมชน</div>
     <div class="nav-item" data-tab="profile" onclick="goTab('profile',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>โปรไฟล์</div>
   </div>
@@ -613,7 +616,7 @@ function renderHero(user){
     document.getElementById('heroFill').style.width = pct + '%';
     document.getElementById('heroNext').textContent =
       points === 0
-        ? 'เริ่มแจ้งของเหลือเพื่อสะสมแต้มแรกของคุณ'
+        ? 'เริ่มแจ้งเศษเหลือใช้เกษตรเพื่อสะสมแต้มแรกของคุณ'
         : `อีก ${(nextLevel.min - points).toLocaleString('th-TH')} แต้ม ไต่สู่ระดับ "${nextLevel.name}"`;
   } else {
     document.getElementById('heroFill').style.width = '100%';
@@ -788,7 +791,7 @@ function postListing(){
   saveListings(listings);
   renderBuyListings();
   const btn = document.getElementById('postListingBtn');
-  btn.textContent = '✓ ประกาศขายแล้ว — ดูได้ในแท็บ "ซื้อของเหลือ"';
+  btn.textContent = '✓ ประกาศขายแล้ว — ดูได้ในแท็บ "ซื้อเศษเหลือใช้เกษตร"';
   btn.classList.add('sent');
   btn.onclick = null;
 }
@@ -834,7 +837,7 @@ function renderBuyListings(){
   const combined = [...getListings(), ...WASTE_LISTINGS_MOCK];
   currentBuyItems = combined.filter(l => (buyFilter==="all" || l.wasteKey===buyFilter) && !isListingSold(l.id));
   if(currentBuyItems.length===0){
-    el.innerHTML = `<div class="feat">ยังไม่มีประกาศของเหลือประเภทนี้ในตอนนี้</div>`;
+    el.innerHTML = `<div class="feat">ยังไม่มีประกาศเศษเหลือใช้เกษตรประเภทนี้ในตอนนี้</div>`;
     return;
   }
   currentBuyItems.forEach((l,i)=>{
@@ -910,6 +913,7 @@ let selectedBuyReqWaste = 'pineapple_peel';
 let currentBuyReqItems = [];
 let buyReqProvinceLoaded = false;
 let dirFilter = 'all';
+let currentPartnerItems = [];
 
 function renderDirFilterChips(){
   const el = document.getElementById('dirFilterChips');
@@ -936,7 +940,7 @@ function setDirFilter(key, el){
 
 function switchDirectory(which){
   if(which === 'sellers'){
-    goTab('buy'); // sellers' waste listings already live in the "ซื้อของเหลือ" tab — reuse it directly
+    goTab('buy'); // sellers' waste listings already live in the "ซื้อเศษเหลือใช้เกษตร" tab — reuse it directly
     return;
   }
   document.getElementById('btnDirBuyers').classList.add('on');
@@ -1010,6 +1014,7 @@ function renderBuyerDirectory(){
 
   const filterCategory = dirFilter === 'all' ? null : WASTE_KB[dirFilter].category;
   const matchedBuyers = BUYERS.filter(b => !filterCategory || b.accepts.includes(filterCategory));
+  currentPartnerItems = matchedBuyers;
 
   el.innerHTML += `<div class="sec-h"><h3>บริษัทรับซื้อพันธมิตร</h3></div>`;
   if(matchedBuyers.length===0){
@@ -1020,8 +1025,13 @@ function renderBuyerDirectory(){
       <div class="buyer partner-card" style="width:100%; margin-bottom:8px;" onclick="togglePartnerInfo(${i})">
         <div class="bn">${b.name}</div><div class="bt">${b.type}</div><div class="bd">📍 รับซื้อ ~${b.demand} ตัน/ด.</div>
         <div class="partner-detail" id="partnerDetail${i}" style="display:none;">
-          รับซื้อประเภท: ${b.accepts.map(c=>Object.values(WASTE_KB).find(w=>w.category===c)?.label).filter(Boolean).join(', ')}<br>
-          พื้นที่: ${PROVINCES[b.loc]?.label || '-'} · ติดต่อผ่านแชทหลังจากที่คุณมีของพร้อมขาย
+          <div class="partner-detail-row">
+            <div class="partner-detail-text">
+              รับซื้อประเภท: ${b.accepts.map(c=>Object.values(WASTE_KB).find(w=>w.category===c)?.label).filter(Boolean).join(', ')}<br>
+              พื้นที่: ${PROVINCES[b.loc]?.label || '-'}
+            </div>
+            <button class="buy-btn partner-chat-btn" onclick="event.stopPropagation(); chatWithPartner(${i})">💬 แชท</button>
+          </div>
         </div>
       </div>`;
   });
@@ -1054,6 +1064,45 @@ function renderBuyerDirectory(){
 function togglePartnerInfo(i){
   const el = document.getElementById('partnerDetail'+i);
   if(el) el.style.display = (el.style.display === 'none') ? 'block' : 'none';
+}
+
+function chatWithPartner(i){
+  const user = getCurrentUser();
+  if(!user) return;
+  const b = currentPartnerItems[i];
+  if(!b) return;
+  const partnerPhone = 'partner-' + b.name;
+  const convId = partnerPhone + '::' + user.phone;
+  const chats = getChats();
+  if(!chats[convId]){
+    chats[convId] = {
+      listingId: partnerPhone,
+      sellerPhone: user.phone,
+      sellerName: user.name,
+      buyerPhone: partnerPhone,
+      buyerName: b.name,
+      wasteLabel: b.type,
+      wasteKey: null,
+      qty: 0,
+      originProvince: user.province,
+      originProvinceLabel: user.provinceLabel,
+      originLat: user.lat || null,
+      originLng: user.lng || null,
+      originAddressLabel: user.addressLabel || '',
+      destProvince: b.loc,
+      destProvinceLabel: PROVINCES[b.loc] ? PROVINCES[b.loc].label : '',
+      destLat: null,
+      destLng: null,
+      destAddressLabel: '',
+      messages: [
+        { from: user.phone, text: `สวัสดีครับ/ค่ะ สนใจติดต่อเรื่องการรับซื้อกับ ${b.name}`, time: nowLabel() }
+      ],
+      deal: { status: 'none' },
+      updatedAt: Date.now()
+    };
+    saveChats(chats);
+  }
+  openChatThread(convId);
 }
 
 function closeBuyRequest(id){
@@ -1218,7 +1267,7 @@ function renderChatThread(){
   const otherName = (user.phone === conv.sellerPhone) ? conv.buyerName : conv.sellerName;
   document.getElementById('chatThreadName').textContent = otherName;
   const msgEl = document.getElementById('chatMessages');
-  msgEl.innerHTML = `<div class="chat-context">คุยเรื่อง: ${conv.wasteLabel} ${conv.qty.toFixed(1)} ตัน</div>`;
+  msgEl.innerHTML = `<div class="chat-context">คุยเรื่อง: ${conv.wasteLabel}${conv.qty ? ' ' + conv.qty.toFixed(1) + ' ตัน' : ''}</div>`;
   msgEl.innerHTML += renderRouteCard(conv);
   conv.messages.forEach(m=>{
     const mine = m.from === user.phone;
@@ -1360,7 +1409,7 @@ function renderChatInbox(){
   const mine = Object.entries(chats).filter(([id,c]) => c.sellerPhone===user.phone || c.buyerPhone===user.phone);
   mine.sort((a,b)=> b[1].updatedAt - a[1].updatedAt);
   if(mine.length===0){
-    el.innerHTML = `<div class="feat">ยังไม่มีแชท — ลองกด "สนใจซื้อ" ในแท็บซื้อของเหลือ หรือรอมีคนสนใจของที่คุณประกาศขายไว้</div>`;
+    el.innerHTML = `<div class="feat">ยังไม่มีแชท — ลองกด "สนใจซื้อ" ในแท็บซื้อเศษเหลือใช้เกษตร หรือรอมีคนสนใจของที่คุณประกาศขายไว้</div>`;
     return;
   }
   el.innerHTML = '';
