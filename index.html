@@ -229,6 +229,24 @@
   .deal-form select, .deal-form input{width:100%; margin-bottom:8px; padding:9px; border-radius:8px; border:1px solid var(--line); font-size:13px;}
   .deal-form button{width:100%; background:var(--accent); color:#fff; border:none; padding:10px; border-radius:9px; font-weight:800; font-size:13px; cursor:pointer;}
   .deal-success{background:var(--teal); color:#eafff9; border-radius:12px; padding:16px; margin:4px 0 14px; text-align:center; font-size:13px; font-weight:700; line-height:1.6;}
+
+  .route-card{background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px; margin:4px 0 14px;}
+  .route-row{display:flex; align-items:center; gap:10px;}
+  .route-dot{width:12px; height:12px; border-radius:50%; flex-shrink:0;}
+  .route-dot.origin{background:var(--strong);}
+  .route-dot.dest{background:var(--accent);}
+  .route-connector{width:2px; height:16px; background:var(--line); margin-left:5px;}
+  .route-label{font-size:10.5px; color:var(--muted);}
+  .route-place{font-size:13px; font-weight:700; color:var(--ink);}
+  .route-dist{font-size:12px; font-weight:700; color:var(--strong); text-align:center; margin-top:10px;
+    background:var(--card-alt); border-radius:8px; padding:8px;}
+  .route-map-toggle{text-align:center; font-size:11.5px; color:var(--muted); margin-top:8px; cursor:pointer; text-decoration:underline;}
+  .route-approx{font-size:10.5px; color:var(--muted); text-align:center; margin-top:6px;}
+
+  .location-card{background:var(--card); border:1px solid var(--line); border-radius:10px; padding:13px; margin-bottom:16px;}
+  .location-status{font-size:12px; color:var(--muted); margin-bottom:10px; font-weight:600;}
+  .location-status.ok{color:var(--strong);}
+  .location-card input{width:100%; padding:10px 12px; border-radius:8px; border:1px solid var(--line); font-size:13px;}
 </style>
 </head>
 <body>
@@ -412,6 +430,13 @@
         <div style="font-size:16px; font-weight:800;" id="profileName">–</div>
         <div style="font-size:12px; color:var(--accent); font-weight:700;" id="profileRole">–</div>
       </div>
+      <div class="sec-h"><h3>ตำแหน่งที่ตั้ง (โรงงาน/แปลง)</h3></div>
+      <div class="location-card">
+        <div class="location-status" id="locationStatus">ยังไม่ได้ตั้งค่าตำแหน่ง</div>
+        <input type="text" id="addressLabelInput" placeholder="ชื่อสถานที่ เช่น โรงงาน ABC ต.บางบัวทอง" onchange="saveAddressLabel()">
+        <button class="reward-btn" style="margin-top:8px;" onclick="useCurrentLocation()">📍 ใช้ตำแหน่งปัจจุบัน (GPS)</button>
+      </div>
+
       <div class="sec-h"><h3>เหรียญตราที่สะสมได้</h3></div>
       <div class="badge-grid">
         <div class="badge">🌾</div><div class="badge">♻️</div><div class="badge">🤝</div><div class="badge locked">🏆</div>
@@ -571,6 +596,58 @@ function applyUser(user){
   document.getElementById('profileRole').textContent = roleLabel(roles) + ' · ' + user.provinceLabel;
   document.getElementById('authScreen').classList.add('hidden');
   renderHero(user);
+  renderLocationStatus(user);
+}
+
+function renderLocationStatus(user){
+  const statusEl = document.getElementById('locationStatus');
+  const input = document.getElementById('addressLabelInput');
+  if(!statusEl) return;
+  if(input) input.value = user.addressLabel || '';
+  if(user.lat && user.lng){
+    statusEl.textContent = `✓ ตั้งค่าแล้ว (${user.lat.toFixed(4)}, ${user.lng.toFixed(4)})`;
+    statusEl.classList.add('ok');
+  } else {
+    statusEl.textContent = 'ยังไม่ได้ตั้งค่าตำแหน่ง GPS — ระยะทางในแชทจะประมาณจากจังหวัดแทน';
+    statusEl.classList.remove('ok');
+  }
+}
+
+function useCurrentLocation(){
+  const user = getCurrentUser();
+  if(!user) return;
+  const statusEl = document.getElementById('locationStatus');
+  if(!navigator.geolocation){
+    statusEl.textContent = 'เบราว์เซอร์นี้ไม่รองรับการระบุตำแหน่ง';
+    return;
+  }
+  statusEl.textContent = 'กำลังค้นหาตำแหน่ง...';
+  navigator.geolocation.getCurrentPosition(
+    (pos)=>{
+      const accounts = getAccounts();
+      const u = accounts[user.phone];
+      u.lat = pos.coords.latitude;
+      u.lng = pos.coords.longitude;
+      const label = document.getElementById('addressLabelInput').value.trim();
+      if(label) u.addressLabel = label;
+      saveAccounts(accounts);
+      renderLocationStatus(u);
+    },
+    ()=>{
+      statusEl.textContent = 'ไม่สามารถเข้าถึงตำแหน่งได้ — กรุณาอนุญาตการเข้าถึงตำแหน่งในเบราว์เซอร์';
+    },
+    { enableHighAccuracy:true, timeout:10000 }
+  );
+}
+
+function saveAddressLabel(){
+  const user = getCurrentUser();
+  if(!user) return;
+  const accounts = getAccounts();
+  const u = accounts[user.phone];
+  u.addressLabel = document.getElementById('addressLabelInput').value.trim();
+  saveAccounts(accounts);
+  renderLocationStatus(u);
 }
 
 function logout(){
@@ -606,7 +683,7 @@ document.getElementById('signupForm').addEventListener('submit', function(e){
     errEl.style.display = 'block';
     return;
   }
-  accounts[phone] = { name, phone, roles: Array.from(selectedRoles), province, provinceLabel: PROVINCES[province].label, points: 0 };
+  accounts[phone] = { name, phone, roles: Array.from(selectedRoles), province, provinceLabel: PROVINCES[province].label, points: 0, lat: null, lng: null, addressLabel: '' };
   saveAccounts(accounts);
   localStorage.setItem(CURRENT_KEY, phone);
   applyUser(accounts[phone]);
@@ -668,7 +745,11 @@ function postListing(){
     sellerName: user.name,
     wasteKey: selectedWaste,
     qty: qty,
+    province: origin,
     provinceLabel: PROVINCES[origin].label,
+    lat: user.lat || null,
+    lng: user.lng || null,
+    addressLabel: user.addressLabel || '',
     price: kb.uses[0].value,
     postedAt: 'เพิ่งประกาศ'
   });
@@ -682,12 +763,12 @@ function postListing(){
 
 // mock seed listings so the buy feed isn't empty on first run
 const WASTE_LISTINGS_MOCK = [
-  {id:'M1', sellerPhone:'mock-1', sellerName:'สมชาย ใจดี', wasteKey:'pineapple_peel', qty:2.0, provinceLabel:'เชียงใหม่', price:WASTE_KB.pineapple_peel.uses[0].value, postedAt:'2 ชม.ที่แล้ว'},
-  {id:'M2', sellerPhone:'mock-2', sellerName:'สมหญิง แสงดี', wasteKey:'corn_cob', qty:8.5, provinceLabel:'นครราชสีมา', price:WASTE_KB.corn_cob.uses[0].value, postedAt:'5 ชม.ที่แล้ว'},
-  {id:'M3', sellerPhone:'mock-3', sellerName:'ประวิทย์ คงดี', wasteKey:'coffee_grounds', qty:1.2, provinceLabel:'ประจวบคีรีขันธ์', price:WASTE_KB.coffee_grounds.uses[0].value, postedAt:'เมื่อวาน'},
-  {id:'M4', sellerPhone:'mock-4', sellerName:'วิไล ทองดี', wasteKey:'rice_husk', qty:12.0, provinceLabel:'ขอนแก่น', price:WASTE_KB.rice_husk.uses[0].value, postedAt:'เมื่อวาน'},
-  {id:'M5', sellerPhone:'mock-5', sellerName:'อนันต์ พูนดี', wasteKey:'cassava_pulp', qty:5.0, provinceLabel:'สุราษฎร์ธานี', price:WASTE_KB.cassava_pulp.uses[0].value, postedAt:'2 วันที่แล้ว'},
-  {id:'M6', sellerPhone:'mock-6', sellerName:'มาลี ศรีดี', wasteKey:'pineapple_peel', qty:6.0, provinceLabel:'ราชบุรี', price:WASTE_KB.pineapple_peel.uses[0].value, postedAt:'2 วันที่แล้ว'}
+  {id:'M1', sellerPhone:'mock-1', sellerName:'สมชาย ใจดี', wasteKey:'pineapple_peel', qty:2.0, province:'chiangmai', provinceLabel:'เชียงใหม่', price:WASTE_KB.pineapple_peel.uses[0].value, postedAt:'2 ชม.ที่แล้ว'},
+  {id:'M2', sellerPhone:'mock-2', sellerName:'สมหญิง แสงดี', wasteKey:'corn_cob', qty:8.5, province:'korat', provinceLabel:'นครราชสีมา', price:WASTE_KB.corn_cob.uses[0].value, postedAt:'5 ชม.ที่แล้ว'},
+  {id:'M3', sellerPhone:'mock-3', sellerName:'ประวิทย์ คงดี', wasteKey:'coffee_grounds', qty:1.2, province:'prachuap', provinceLabel:'ประจวบคีรีขันธ์', price:WASTE_KB.coffee_grounds.uses[0].value, postedAt:'เมื่อวาน'},
+  {id:'M4', sellerPhone:'mock-4', sellerName:'วิไล ทองดี', wasteKey:'rice_husk', qty:12.0, province:'khonkaen', provinceLabel:'ขอนแก่น', price:WASTE_KB.rice_husk.uses[0].value, postedAt:'เมื่อวาน'},
+  {id:'M5', sellerPhone:'mock-5', sellerName:'อนันต์ พูนดี', wasteKey:'cassava_pulp', qty:5.0, province:'surat', provinceLabel:'สุราษฎร์ธานี', price:WASTE_KB.cassava_pulp.uses[0].value, postedAt:'2 วันที่แล้ว'},
+  {id:'M6', sellerPhone:'mock-6', sellerName:'มาลี ศรีดี', wasteKey:'pineapple_peel', qty:6.0, province:'ratchaburi', provinceLabel:'ราชบุรี', price:WASTE_KB.pineapple_peel.uses[0].value, postedAt:'2 วันที่แล้ว'}
 ];
 
 let buyFilter = "all";
@@ -765,6 +846,16 @@ function interestInListing(i){
       wasteLabel: kb.label,
       wasteKey: listing.wasteKey,
       qty: listing.qty,
+      originProvince: listing.province,
+      originProvinceLabel: listing.provinceLabel,
+      originLat: listing.lat || null,
+      originLng: listing.lng || null,
+      originAddressLabel: listing.addressLabel || '',
+      destProvince: user.province,
+      destProvinceLabel: user.provinceLabel,
+      destLat: user.lat || null,
+      destLng: user.lng || null,
+      destAddressLabel: user.addressLabel || '',
       messages: [
         { from: user.phone, text: `สนใจซื้อ${kb.label} ${listing.qty.toFixed(1)} ตัน ครับ/ค่ะ`, time: nowLabel() }
       ],
@@ -781,9 +872,101 @@ function interestInListing(i){
 let activeConvId = null;
 
 function openChatThread(convId){
+  if(convId !== activeConvId) routeMapOpen = false;
   activeConvId = convId;
   renderChatThread();
   goTab('chatThread');
+}
+
+let routeMapOpen = false;
+
+function haversineKm(lat1, lng1, lat2, lng2){
+  const R = 6371;
+  const dLat = (lat2-lat1) * Math.PI/180;
+  const dLng = (lng2-lng1) * Math.PI/180;
+  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+// rough bounding box of Thailand, used to plot real GPS points on the schematic map
+const TH_BOUNDS = { latMin:5.6, latMax:20.5, lngMin:97.3, lngMax:105.6 };
+function projectLatLng(lat, lng, w, h){
+  const x = ((lng - TH_BOUNDS.lngMin) / (TH_BOUNDS.lngMax - TH_BOUNDS.lngMin)) * w;
+  const y = h - ((lat - TH_BOUNDS.latMin) / (TH_BOUNDS.latMax - TH_BOUNDS.latMin)) * h;
+  return { x, y };
+}
+
+function renderRouteCard(conv){
+  const hasReal = conv.originLat && conv.originLng && conv.destLat && conv.destLng;
+  const hasProvince = conv.originProvince && conv.destProvince;
+  if(!hasReal && !hasProvince) return '';
+
+  const originLabel = conv.originAddressLabel || conv.originProvinceLabel || 'ไม่ระบุ';
+  const destLabel = conv.destAddressLabel || conv.destProvinceLabel || 'ไม่ระบุ';
+  const dist = hasReal
+    ? haversineKm(conv.originLat, conv.originLng, conv.destLat, conv.destLng)
+    : distanceKm(conv.originProvince, conv.destProvince);
+  const approxNote = hasReal ? '' : `<div class="route-approx">* ประมาณจากจังหวัด เนื่องจากยังไม่ได้ตั้งค่าตำแหน่ง GPS จริง (ตั้งค่าได้ในเมนูโปรไฟล์)</div>`;
+  const mapSvg = hasReal
+    ? renderRealRouteMapSVG(conv.originLat, conv.originLng, conv.destLat, conv.destLng, originLabel, destLabel)
+    : renderRouteMapSVG(conv.originProvince, conv.destProvince);
+
+  return `
+    <div class="route-card">
+      <div class="route-row">
+        <div class="route-dot origin"></div>
+        <div><div class="route-label">ต้นทาง (ผู้ขาย)</div><div class="route-place">${escapeHtml(originLabel)}</div></div>
+      </div>
+      <div class="route-connector"></div>
+      <div class="route-row">
+        <div class="route-dot dest"></div>
+        <div><div class="route-label">ปลายทาง (ผู้ซื้อ)</div><div class="route-place">${escapeHtml(destLabel)}</div></div>
+      </div>
+      <div class="route-dist">🚚 ระยะทางโดยประมาณ ${fmtKm(dist)}</div>
+      ${approxNote}
+      <div class="route-map-toggle" onclick="toggleRouteMap()">${routeMapOpen ? 'ซ่อนแผนที่ ▲' : 'ดูแผนที่ ▼'}</div>
+      <div id="routeMapHolder">${routeMapOpen ? mapSvg : ''}</div>
+    </div>`;
+}
+
+function toggleRouteMap(){
+  routeMapOpen = !routeMapOpen;
+  renderChatThread();
+}
+
+function renderRouteMapSVG(originKey, destKey){
+  const o = PROVINCES[originKey], d = PROVINCES[destKey];
+  let dots = '';
+  Object.entries(PROVINCES).forEach(([k,p])=>{
+    if(k===originKey || k===destKey) return;
+    dots += `<circle cx="${p.x}" cy="${p.y}" r="2.5" fill="rgba(0,0,0,0.15)"/>`;
+  });
+  return `
+    <svg viewBox="0 0 400 660" width="100%" height="230" style="display:block; margin-top:10px;">
+      <rect x="0" y="0" width="400" height="660" rx="8" fill="#eef4ea"/>
+      ${dots}
+      <line x1="${o.x}" y1="${o.y}" x2="${d.x}" y2="${d.y}" stroke="var(--accent)" stroke-width="2" stroke-dasharray="5 4"/>
+      <circle cx="${o.x}" cy="${o.y}" r="7" fill="var(--strong)" stroke="#fff" stroke-width="2"/>
+      <text x="${o.x+11}" y="${o.y+4}" font-size="12" fill="var(--strong)" font-weight="700">${PROVINCES[originKey].label}</text>
+      <circle cx="${d.x}" cy="${d.y}" r="7" fill="var(--accent)" stroke="#fff" stroke-width="2"/>
+      <text x="${d.x+11}" y="${d.y+4}" font-size="12" fill="var(--accent)" font-weight="700">${PROVINCES[destKey].label}</text>
+    </svg>`;
+}
+
+function renderRealRouteMapSVG(oLat, oLng, dLat, dLng, originLabel, destLabel){
+  const W = 400, H = 660;
+  const o = projectLatLng(oLat, oLng, W, H);
+  const d = projectLatLng(dLat, dLng, W, H);
+  return `
+    <svg viewBox="0 0 ${W} ${H}" width="100%" height="230" style="display:block; margin-top:10px;">
+      <rect x="0" y="0" width="${W}" height="${H}" rx="8" fill="#eef4ea"/>
+      <line x1="${o.x}" y1="${o.y}" x2="${d.x}" y2="${d.y}" stroke="var(--accent)" stroke-width="2" stroke-dasharray="5 4"/>
+      <circle cx="${o.x}" cy="${o.y}" r="7" fill="var(--strong)" stroke="#fff" stroke-width="2"/>
+      <text x="${o.x+11}" y="${o.y+4}" font-size="11" fill="var(--strong)" font-weight="700">${escapeHtml(originLabel).slice(0,18)}</text>
+      <circle cx="${d.x}" cy="${d.y}" r="7" fill="var(--accent)" stroke="#fff" stroke-width="2"/>
+      <text x="${d.x+11}" y="${d.y+4}" font-size="11" fill="var(--accent)" font-weight="700">${escapeHtml(destLabel).slice(0,18)}</text>
+      <text x="10" y="${H-12}" font-size="9.5" fill="#8a9a88">พิกัด GPS จริง (แผนที่จำลองตำแหน่งสัมพัทธ์)</text>
+    </svg>`;
 }
 
 function renderChatThread(){
@@ -795,6 +978,7 @@ function renderChatThread(){
   document.getElementById('chatThreadName').textContent = otherName;
   const msgEl = document.getElementById('chatMessages');
   msgEl.innerHTML = `<div class="chat-context">คุยเรื่อง: ${conv.wasteLabel} ${conv.qty.toFixed(1)} ตัน</div>`;
+  msgEl.innerHTML += renderRouteCard(conv);
   conv.messages.forEach(m=>{
     const mine = m.from === user.phone;
     msgEl.innerHTML += `
